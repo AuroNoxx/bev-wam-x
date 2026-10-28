@@ -1,0 +1,345 @@
+{
+  "protocol_version": "BEV_WA_ALIGNED_V1",
+  "date_user_timezone": "2026-10-22",
+  "stage": 2,
+  "title": "Long-Horizon Future BEV Sequence Dataset & Matched Baseline Training",
+  "dataset_stats": {
+    "train": {
+      "episodes": 48,
+      "total_anchors": 12186,
+      "eligible_action_anchors": 12186,
+      "action_qualification_rate": 1.0
+    },
+    "validation": {
+      "episodes": 24,
+      "total_anchors": 6453,
+      "eligible_action_anchors": 6453,
+      "action_qualification_rate": 1.0
+    }
+  },
+  "training_runs": {
+    "seed_20261022": {
+      "seed": 20261022,
+      "best_val_ade_2s": 0.1841,
+      "history": [
+        {
+          "epoch": 1,
+          "train_loss": 0.0572,
+          "val_loss": 0.0557,
+          "ade_1s": 0.0826,
+          "ade_2s": 0.2399,
+          "fde_2s": 0.5846,
+          "neg_speed_pct": 0.0
+        },
+        {
+          "epoch": 2,
+          "train_loss": 0.0375,
+          "val_loss": 0.052,
+          "ade_1s": 0.0779,
+          "ade_2s": 0.2191,
+          "fde_2s": 0.5237,
+          "neg_speed_pct": 0.0
+        },
+        {
+          "epoch": 3,
+          "train_loss": 0.027,
+          "val_loss": 0.052,
+          "ade_1s": 0.0812,
+          "ade_2s": 0.2281,
+          "fde_2s": 0.5474,
+          "neg_speed_pct": 0.0
+        },
+        {
+          "epoch": 4,
+          "train_loss": 0.019,
+          "val_loss": 0.0554,
+          "ade_1s": 0.078,
+          "ade_2s": 0.2214,
+          "fde_2s": 0.5332,
+          "neg_speed_pct": 0.0
+        },
+        {
+          "epoch": 5,
+          "train_loss": 0.0126,
+          "val_loss": 0.0514,
+          "ade_1s": 0.0693,
+          "ade_2s": 0.2022,
+          "fde_2s": 0.4916,
+          "neg_speed_pct": 0.0
+        },
+        {
+          "epoch": 6,
+          "train_loss": 0.0079,
+          "val_loss": 0.0514,
+          "ade_1s": 0.0683,
+          "ade_2s": 0.1952,
+          "fde_2s": 0.4741,
+          "neg_speed_pct": 0.0
+        },
+        {
+          "epoch": 7,
+          "train_loss": 0.0055,
+          "val_loss": 0.0511,
+          "ade_1s": 0.0675,
+          "ade_2s": 0.1915,
+          "fde_2s": 0.463,
+          "neg_speed_pct": 0.0
+        },
+        {
+          "epoch": 8,
+          "train_loss": 0.004,
+          "val_loss": 0.0508,
+          "ade_1s": 0.0643,
+          "ade_2s": 0.1875,
+          "fde_2s": 0.4571,
+          "neg_speed_pct": 0.0
+        },
+        {
+          "epoch": 9,
+          "train_loss": 0.0033,
+          "val_loss": 0.0508,
+          "ade_1s": 0.0627,
+          "ade_2s": 0.1846,
+          "fde_2s": 0.4502,
+          "neg_speed_pct": 0.0
+        },
+        {
+          "epoch": 10,
+          "train_loss": 0.0029,
+          "val_loss": 0.0508,
+          "ade_1s": 0.0621,
+          "ade_2s": 0.1841,
+          "fde_2s": 0.4498,
+          "neg_speed_pct": 0.0
+        }
+      ],
+      "ckpt": "/home/auronox/Desktop/mini-wa-jepa/artifacts/bev_wa_alignment/stage2_001/baseline_seed_20261022.pt"
+    },
+    "seed_20261023": {
+      "seed": 20261023,
+      "best_val_ade_2s": 0.1762,
+      "history": [
+        {
+          "epoch": 1,
+          "train_loss": 0.0578,
+          "val_loss": 0.0579,
+          "ade_1s": 0.0858,
+          "ade_2s": 0.2425,
+          "fde_2s": 0.5904,
+          "neg_speed_pct": 0.0
+        },
+        {
+          "epoch": 2,
+          "train_loss": 0.0314,
+          "val_loss": 0.0505,
+          "ade_1s": 0.0856,
+          "ade_2s": 0.2328,
+          "fde_2s": 0.5544,
+          "neg_speed_pct": 0.0
+        },
+        {
+          "epoch": 3,
+          "train_loss": 0.0176,
+          "val_loss": 0.0474,
+          "ade_1s": 0.0866,
+          "ade_2s": 0.212,
+          "fde_2s": 0.4925,
+          "neg_speed_pct": 0.0
+        },
+        {
+          "epoch": 4,
+          "train_loss": 0.012,
+          "val_loss": 0.048,
+          "ade_1s": 0.0816,
+          "ade_2s": 0.2051,
+          "fde_2s": 0.4795,
+          "neg_speed_pct": 0.0
+        },
+        {
+          "epoch": 5,
+          "train_loss": 0.0085,
+          "val_loss": 0.0455,
+          "ade_1s": 0.0699,
+          "ade_2s": 0.192,
+          "fde_2s": 0.4579,
+          "neg_speed_pct": 0.0
+        },
+        {
+          "epoch": 6,
+          "train_loss": 0.0057,
+          "val_loss": 0.0479,
+          "ade_1s": 0.0696,
+          "ade_2s": 0.1944,
+          "fde_2s": 0.4628,
+          "neg_speed_pct": 0.0
+        },
+        {
+          "epoch": 7,
+          "train_loss": 0.0041,
+          "val_loss": 0.0457,
+          "ade_1s": 0.0653,
+          "ade_2s": 0.1804,
+          "fde_2s": 0.4321,
+          "neg_speed_pct": 0.0
+        },
+        {
+          "epoch": 8,
+          "train_loss": 0.0032,
+          "val_loss": 0.0456,
+          "ade_1s": 0.0619,
+          "ade_2s": 0.1766,
+          "fde_2s": 0.4261,
+          "neg_speed_pct": 0.0
+        },
+        {
+          "epoch": 9,
+          "train_loss": 0.0027,
+          "val_loss": 0.0463,
+          "ade_1s": 0.0618,
+          "ade_2s": 0.1781,
+          "fde_2s": 0.4311,
+          "neg_speed_pct": 0.0
+        },
+        {
+          "epoch": 10,
+          "train_loss": 0.0024,
+          "val_loss": 0.046,
+          "ade_1s": 0.0607,
+          "ade_2s": 0.1762,
+          "fde_2s": 0.4274,
+          "neg_speed_pct": 0.0
+        }
+      ],
+      "ckpt": "/home/auronox/Desktop/mini-wa-jepa/artifacts/bev_wa_alignment/stage2_001/baseline_seed_20261023.pt"
+    }
+  },
+  "closed_loop_eval": {
+    "seed_20261022": {
+      "scenes_tested": 6,
+      "arrivals": 6,
+      "arrival_rate": 1.0,
+      "mean_route_completion": 0.9605,
+      "mean_latency_p95_ms": 2.87,
+      "scene_details": [
+        {
+          "seed": 4300000,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 190,
+          "route_completion": 0.9658,
+          "latency_p95_ms": 2.58
+        },
+        {
+          "seed": 4300001,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 163,
+          "route_completion": 0.9547,
+          "latency_p95_ms": 2.95
+        },
+        {
+          "seed": 4300002,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 183,
+          "route_completion": 0.962,
+          "latency_p95_ms": 2.86
+        },
+        {
+          "seed": 4300003,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 162,
+          "route_completion": 0.9529,
+          "latency_p95_ms": 2.82
+        },
+        {
+          "seed": 4300004,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 207,
+          "route_completion": 0.9612,
+          "latency_p95_ms": 2.91
+        },
+        {
+          "seed": 4300005,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 195,
+          "route_completion": 0.9662,
+          "latency_p95_ms": 3.12
+        }
+      ]
+    },
+    "seed_20261023": {
+      "scenes_tested": 6,
+      "arrivals": 6,
+      "arrival_rate": 1.0,
+      "mean_route_completion": 0.9605,
+      "mean_latency_p95_ms": 3.06,
+      "scene_details": [
+        {
+          "seed": 4300000,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 172,
+          "route_completion": 0.9662,
+          "latency_p95_ms": 2.99
+        },
+        {
+          "seed": 4300001,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 148,
+          "route_completion": 0.9568,
+          "latency_p95_ms": 3.27
+        },
+        {
+          "seed": 4300002,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 160,
+          "route_completion": 0.9648,
+          "latency_p95_ms": 3.07
+        },
+        {
+          "seed": 4300003,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 150,
+          "route_completion": 0.9487,
+          "latency_p95_ms": 3.02
+        },
+        {
+          "seed": 4300004,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 188,
+          "route_completion": 0.9611,
+          "latency_p95_ms": 2.93
+        },
+        {
+          "seed": 4300005,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 172,
+          "route_completion": 0.9653,
+          "latency_p95_ms": 3.07
+        }
+      ]
+    }
+  },
+  "passed": true
+}

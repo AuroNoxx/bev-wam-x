@@ -1,9 +1,0 @@
-{
-  "map_spec": "CSC",
-  "seed": 319009,
-  "step": 3250,
-  "route_completion": 0.9285066872896097,
-  "speed_m_s": 6.999451637268066,
-  "pipeline_ms": 6.85817399971711,
-  "decision_ms": 4.1568750002625166
-}

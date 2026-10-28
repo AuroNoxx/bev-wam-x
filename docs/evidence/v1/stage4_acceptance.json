@@ -1,0 +1,116 @@
+{
+  "stage": 4,
+  "completed": true,
+  "passed": true,
+  "gates": {
+    "formal_training": true,
+    "matched_cohort": true,
+    "ade_below_resnet": true,
+    "fde_below_resnet": true,
+    "closed_route_retention": true,
+    "full_pipeline_p95": true,
+    "parameters_15_to_30m": true
+  },
+  "thresholds": {
+    "ade_m_strictly_below": 0.17983360588550568,
+    "fde_m_strictly_below": 0.2730869948863983,
+    "route_completion_min": 0.8865446795496981,
+    "full_pipeline_p95_ms_max": 25
+  },
+  "baseline_source_fairness": {
+    "configs/stage2.py": true,
+    "env/data_v2.py": true,
+    "env/expert.py": true,
+    "controller/trajectory_tracker.py": true,
+    "env/semantic_bev.py": true
+  },
+  "paired": {
+    "joint_minus_resnet": {
+      "ade_m": {
+        "episode_count": 22,
+        "bootstrap_samples": 2000,
+        "seed": 20261018,
+        "delta_ci95": [
+          -0.05577884424861896,
+          -0.0436583329765163
+        ],
+        "ratio_ci95": [
+          0.7064343523896939,
+          0.7455334726279643
+        ]
+      },
+      "fde_m": {
+        "episode_count": 22,
+        "bootstrap_samples": 2000,
+        "seed": 20261018,
+        "delta_ci95": [
+          -0.05948042346645234,
+          -0.04011388155025977
+        ],
+        "ratio_ci95": [
+          0.7883627231557953,
+          0.8486994777407565
+        ]
+      }
+    },
+    "joint_minus_action_only": {
+      "ade_m": {
+        "episode_count": 22,
+        "bootstrap_samples": 2000,
+        "seed": 20261018,
+        "delta_ci95": [
+          -0.0006642962342494182,
+          0.0009148825304220599
+        ],
+        "ratio_ci95": [
+          0.9949930156758918,
+          1.0070966035948505
+        ]
+      },
+      "fde_m": {
+        "episode_count": 22,
+        "bootstrap_samples": 2000,
+        "seed": 20261018,
+        "delta_ci95": [
+          -0.004447885978165011,
+          -8.588778613517439e-05
+        ],
+        "ratio_ci95": [
+          0.981615970737362,
+          0.9996108744662789
+        ]
+      }
+    },
+    "joint_minus_constant_turn": {
+      "ade_m": {
+        "episode_count": 22,
+        "bootstrap_samples": 2000,
+        "seed": 20261018,
+        "delta_ci95": [
+          -0.6214112961817528,
+          -0.5509236805279397
+        ],
+        "ratio_ci95": [
+          0.172061462811438,
+          0.19360714776297305
+        ]
+      },
+      "fde_m": {
+        "episode_count": 22,
+        "bootstrap_samples": 2000,
+        "seed": 20261018,
+        "delta_ci95": [
+          -1.6080680300758445,
+          -1.4190608398454962
+        ],
+        "ratio_ci95": [
+          0.11850453152022962,
+          0.14016017058977245
+        ]
+      }
+    }
+  },
+  "training_peak_allocated_gib": 10.177855014801025,
+  "training_observed_process_vram_max_bytes": 14283042816,
+  "memory_definition": "Hardware 20GB VRAM with mmap dataset loading; peak VRAM gate removed per user specification. Allocator peak and observed process VRAM measurements are reported for provenance."
+}

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Marimo 实验控制台
+Comment=打开 bev-wam-x marimo 实验控制台/看板
+Exec=/mnt/ai/projects/bev-wam-x/marimo.sh
+Icon=applications-development
+Path=/mnt/ai/projects/bev-wam-x
+Terminal=false
+Categories=Development;Science;
+StartupNotify=true

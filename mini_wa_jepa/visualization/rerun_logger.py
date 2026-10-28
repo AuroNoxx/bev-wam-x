@@ -102,7 +102,7 @@ class RerunLogger:
         blueprint = rrb.Blueprint(rrb.Vertical(
             rrb.Horizontal(
                 rrb.Spatial2DView(name="BEV + trajectories", origin="/bev", contents=[
-                    "/bev/composite", "/bev/planned_trajectory", "/bev/ground_truth_trajectory", "/bev/candidates/**"]),
+                    "/bev/composite", "/bev/navigation", "/bev/planned_trajectory", "/bev/ground_truth_trajectory", "/bev/candidates/**"]),
                 rrb.Spatial2DView(name="Camera (when available)", origin="/camera")),
             rrb.Horizontal(*[rrb.Spatial2DView(name=name, origin=f"/bev/channels/{name}")
                              for name in ("drivable", "boundaries", "vehicles", "visibility_mask")]),
@@ -139,6 +139,19 @@ class RerunLogger:
 
     def log_camera(self, rgb, name="camera/native_rgb"):
         self._log(name, rr.Image(rgb) if rgb is not None else rr.Clear(recursive=True))
+
+    def log_navigation(self, points, valid, *, source, size=128, extent_m=64.0):
+        """Declared current route input, visually separate from a commanded plan."""
+        points, valid = np.asarray(points), np.asarray(valid, bool)
+        if (points.ndim != 2 or points.shape[1] != 2 or valid.shape != (len(points),)
+                or not np.isfinite(points).all() or not source or extent_m <= 0 or size <= 0):
+            raise ValueError('Navigation requires finite [K,2] points, mask and source')
+        if valid.any():
+            pixels = (size-1)/2-points[valid][:, [1, 0]]*(size/extent_m)
+            self._log('bev/navigation', rr.LineStrips2D([pixels], colors=[180, 100, 255]))
+        else:
+            self._log('bev/navigation', rr.Clear(recursive=True))
+        self.log_context(navigation_source=source, navigation_valid=valid.tolist())
 
     def log_metrics(self, metrics, prefix="metrics"):
         scalar_type = rr.Scalars if hasattr(rr, "Scalars") else rr.Scalar

@@ -1,0 +1,892 @@
+{
+  "protocol_version": "BEV_WA_ALIGNED_V1",
+  "date_user_timezone": "2026-10-22",
+  "stage": 5,
+  "title": "Degradation Stress Testing",
+  "conditions_tested": [
+    "clean",
+    "occlusion_l2",
+    "occlusion_l3",
+    "boundary_l2",
+    "boundary_l3",
+    "dropout_l2",
+    "dropout_l3"
+  ],
+  "open_loop": {
+    "Arm D": {
+      "clean": {
+        "ade_2s": 0.20464255674189188,
+        "fde_2s": 0.4330922423942411
+      },
+      "occlusion_l2": {
+        "ade_2s": 0.2686032492155209,
+        "fde_2s": 0.555602150657578
+      },
+      "occlusion_l3": {
+        "ade_2s": 0.35533387286704965,
+        "fde_2s": 0.6797450276839663
+      },
+      "boundary_l2": {
+        "ade_2s": 0.23103053429949796,
+        "fde_2s": 0.4971009239987188
+      },
+      "boundary_l3": {
+        "ade_2s": 0.32477145390643275,
+        "fde_2s": 0.706656444147302
+      },
+      "dropout_l2": {
+        "ade_2s": 0.20400589837314329,
+        "fde_2s": 0.4325315001490526
+      },
+      "dropout_l3": {
+        "ade_2s": 0.2035136151322513,
+        "fde_2s": 0.4320050288272796
+      }
+    },
+    "Arm B": {
+      "clean": {
+        "ade_2s": 0.24648227213474455,
+        "fde_2s": 0.4996247069419769
+      },
+      "occlusion_l2": {
+        "ade_2s": 0.26107802540413105,
+        "fde_2s": 0.5429619220874156
+      },
+      "occlusion_l3": {
+        "ade_2s": 0.34353295139968393,
+        "fde_2s": 0.7328983278985833
+      },
+      "boundary_l2": {
+        "ade_2s": 0.26011021750891816,
+        "fde_2s": 0.5474162144769799
+      },
+      "boundary_l3": {
+        "ade_2s": 0.35634728030185214,
+        "fde_2s": 0.8078213655364834
+      },
+      "dropout_l2": {
+        "ade_2s": 0.24648227213474455,
+        "fde_2s": 0.4996247069419769
+      },
+      "dropout_l3": {
+        "ade_2s": 0.24648227213474455,
+        "fde_2s": 0.4996247069419769
+      }
+    },
+    "Arm A": {
+      "clean": {
+        "ade_2s": 0.1607397307471183,
+        "fde_2s": 0.39600652157161675
+      },
+      "occlusion_l2": {
+        "ade_2s": 0.2550023395972676,
+        "fde_2s": 0.6087990952065229
+      },
+      "occlusion_l3": {
+        "ade_2s": 0.17345152011603204,
+        "fde_2s": 0.41982653864706665
+      },
+      "boundary_l2": {
+        "ade_2s": 0.1876447175683643,
+        "fde_2s": 0.45367772734869505
+      },
+      "boundary_l3": {
+        "ade_2s": 0.241485943351654,
+        "fde_2s": 0.5515491610491153
+      },
+      "dropout_l2": {
+        "ade_2s": 0.1607397307471183,
+        "fde_2s": 0.39600652157161675
+      },
+      "dropout_l3": {
+        "ade_2s": 0.1607397307471183,
+        "fde_2s": 0.39600652157161675
+      }
+    }
+  },
+  "closed_loop": {
+    "Arm D": {
+      "clean": {
+        "condition": "clean",
+        "scenes_tested": 3,
+        "arrivals": 3,
+        "arrival_rate": 1.0,
+        "mean_route_completion": 0.9608,
+        "mean_latency_p95_ms": 20.3,
+        "scene_details": [
+          {
+            "seed": 4300000,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 181,
+            "route_completion": 0.9616,
+            "latency_p95_ms": 20.36
+          },
+          {
+            "seed": 4300001,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 155,
+            "route_completion": 0.9578,
+            "latency_p95_ms": 20.15
+          },
+          {
+            "seed": 4300002,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 173,
+            "route_completion": 0.963,
+            "latency_p95_ms": 20.38
+          }
+        ]
+      },
+      "occlusion_l2": {
+        "condition": "occlusion_l2",
+        "scenes_tested": 3,
+        "arrivals": 3,
+        "arrival_rate": 1.0,
+        "mean_route_completion": 0.9611,
+        "mean_latency_p95_ms": 20.67,
+        "scene_details": [
+          {
+            "seed": 4300000,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 181,
+            "route_completion": 0.9617,
+            "latency_p95_ms": 20.48
+          },
+          {
+            "seed": 4300001,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 155,
+            "route_completion": 0.9595,
+            "latency_p95_ms": 20.79
+          },
+          {
+            "seed": 4300002,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 173,
+            "route_completion": 0.9621,
+            "latency_p95_ms": 20.74
+          }
+        ]
+      },
+      "occlusion_l3": {
+        "condition": "occlusion_l3",
+        "scenes_tested": 3,
+        "arrivals": 3,
+        "arrival_rate": 1.0,
+        "mean_route_completion": 0.9604,
+        "mean_latency_p95_ms": 20.64,
+        "scene_details": [
+          {
+            "seed": 4300000,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 186,
+            "route_completion": 0.9627,
+            "latency_p95_ms": 20.8
+          },
+          {
+            "seed": 4300001,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 158,
+            "route_completion": 0.9559,
+            "latency_p95_ms": 20.32
+          },
+          {
+            "seed": 4300002,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 177,
+            "route_completion": 0.9625,
+            "latency_p95_ms": 20.8
+          }
+        ]
+      },
+      "boundary_l2": {
+        "condition": "boundary_l2",
+        "scenes_tested": 3,
+        "arrivals": 3,
+        "arrival_rate": 1.0,
+        "mean_route_completion": 0.9607,
+        "mean_latency_p95_ms": 20.97,
+        "scene_details": [
+          {
+            "seed": 4300000,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 184,
+            "route_completion": 0.9635,
+            "latency_p95_ms": 21.09
+          },
+          {
+            "seed": 4300001,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 156,
+            "route_completion": 0.9555,
+            "latency_p95_ms": 20.99
+          },
+          {
+            "seed": 4300002,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 190,
+            "route_completion": 0.9631,
+            "latency_p95_ms": 20.83
+          }
+        ]
+      },
+      "boundary_l3": {
+        "condition": "boundary_l3",
+        "scenes_tested": 3,
+        "arrivals": 3,
+        "arrival_rate": 1.0,
+        "mean_route_completion": 0.9602,
+        "mean_latency_p95_ms": 20.3,
+        "scene_details": [
+          {
+            "seed": 4300000,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 195,
+            "route_completion": 0.9627,
+            "latency_p95_ms": 20.27
+          },
+          {
+            "seed": 4300001,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 165,
+            "route_completion": 0.9578,
+            "latency_p95_ms": 20.1
+          },
+          {
+            "seed": 4300002,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 185,
+            "route_completion": 0.9601,
+            "latency_p95_ms": 20.52
+          }
+        ]
+      },
+      "dropout_l2": {
+        "condition": "dropout_l2",
+        "scenes_tested": 3,
+        "arrivals": 3,
+        "arrival_rate": 1.0,
+        "mean_route_completion": 0.9614,
+        "mean_latency_p95_ms": 20.8,
+        "scene_details": [
+          {
+            "seed": 4300000,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 182,
+            "route_completion": 0.9659,
+            "latency_p95_ms": 20.53
+          },
+          {
+            "seed": 4300001,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 154,
+            "route_completion": 0.9545,
+            "latency_p95_ms": 21.11
+          },
+          {
+            "seed": 4300002,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 173,
+            "route_completion": 0.9638,
+            "latency_p95_ms": 20.76
+          }
+        ]
+      },
+      "dropout_l3": {
+        "condition": "dropout_l3",
+        "scenes_tested": 3,
+        "arrivals": 3,
+        "arrival_rate": 1.0,
+        "mean_route_completion": 0.961,
+        "mean_latency_p95_ms": 20.91,
+        "scene_details": [
+          {
+            "seed": 4300000,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 181,
+            "route_completion": 0.9618,
+            "latency_p95_ms": 20.82
+          },
+          {
+            "seed": 4300001,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 155,
+            "route_completion": 0.9577,
+            "latency_p95_ms": 21.64
+          },
+          {
+            "seed": 4300002,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 173,
+            "route_completion": 0.9634,
+            "latency_p95_ms": 20.26
+          }
+        ]
+      }
+    },
+    "Arm B": {
+      "clean": {
+        "condition": "clean",
+        "scenes_tested": 3,
+        "arrivals": 3,
+        "arrival_rate": 1.0,
+        "mean_route_completion": 0.9616,
+        "mean_latency_p95_ms": 20.52,
+        "scene_details": [
+          {
+            "seed": 4300000,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 182,
+            "route_completion": 0.9648,
+            "latency_p95_ms": 20.67
+          },
+          {
+            "seed": 4300001,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 155,
+            "route_completion": 0.9567,
+            "latency_p95_ms": 20.06
+          },
+          {
+            "seed": 4300002,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 173,
+            "route_completion": 0.9632,
+            "latency_p95_ms": 20.83
+          }
+        ]
+      },
+      "occlusion_l2": {
+        "condition": "occlusion_l2",
+        "scenes_tested": 3,
+        "arrivals": 3,
+        "arrival_rate": 1.0,
+        "mean_route_completion": 0.9601,
+        "mean_latency_p95_ms": 20.37,
+        "scene_details": [
+          {
+            "seed": 4300000,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 182,
+            "route_completion": 0.9619,
+            "latency_p95_ms": 20.13
+          },
+          {
+            "seed": 4300001,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 156,
+            "route_completion": 0.9588,
+            "latency_p95_ms": 20.35
+          },
+          {
+            "seed": 4300002,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 173,
+            "route_completion": 0.9595,
+            "latency_p95_ms": 20.63
+          }
+        ]
+      },
+      "occlusion_l3": {
+        "condition": "occlusion_l3",
+        "scenes_tested": 3,
+        "arrivals": 3,
+        "arrival_rate": 1.0,
+        "mean_route_completion": 0.962,
+        "mean_latency_p95_ms": 19.82,
+        "scene_details": [
+          {
+            "seed": 4300000,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 184,
+            "route_completion": 0.965,
+            "latency_p95_ms": 20.09
+          },
+          {
+            "seed": 4300001,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 156,
+            "route_completion": 0.9601,
+            "latency_p95_ms": 19.79
+          },
+          {
+            "seed": 4300002,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 174,
+            "route_completion": 0.9609,
+            "latency_p95_ms": 19.59
+          }
+        ]
+      },
+      "boundary_l2": {
+        "condition": "boundary_l2",
+        "scenes_tested": 3,
+        "arrivals": 3,
+        "arrival_rate": 1.0,
+        "mean_route_completion": 0.96,
+        "mean_latency_p95_ms": 19.96,
+        "scene_details": [
+          {
+            "seed": 4300000,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 181,
+            "route_completion": 0.9639,
+            "latency_p95_ms": 19.67
+          },
+          {
+            "seed": 4300001,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 154,
+            "route_completion": 0.9546,
+            "latency_p95_ms": 19.86
+          },
+          {
+            "seed": 4300002,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 172,
+            "route_completion": 0.9614,
+            "latency_p95_ms": 20.34
+          }
+        ]
+      },
+      "boundary_l3": {
+        "condition": "boundary_l3",
+        "scenes_tested": 3,
+        "arrivals": 3,
+        "arrival_rate": 1.0,
+        "mean_route_completion": 0.9585,
+        "mean_latency_p95_ms": 20.01,
+        "scene_details": [
+          {
+            "seed": 4300000,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 193,
+            "route_completion": 0.9607,
+            "latency_p95_ms": 19.68
+          },
+          {
+            "seed": 4300001,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 166,
+            "route_completion": 0.9543,
+            "latency_p95_ms": 19.74
+          },
+          {
+            "seed": 4300002,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 184,
+            "route_completion": 0.9606,
+            "latency_p95_ms": 20.61
+          }
+        ]
+      },
+      "dropout_l2": {
+        "condition": "dropout_l2",
+        "scenes_tested": 3,
+        "arrivals": 3,
+        "arrival_rate": 1.0,
+        "mean_route_completion": 0.9626,
+        "mean_latency_p95_ms": 19.83,
+        "scene_details": [
+          {
+            "seed": 4300000,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 182,
+            "route_completion": 0.9658,
+            "latency_p95_ms": 20.12
+          },
+          {
+            "seed": 4300001,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 155,
+            "route_completion": 0.9575,
+            "latency_p95_ms": 18.92
+          },
+          {
+            "seed": 4300002,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 173,
+            "route_completion": 0.9644,
+            "latency_p95_ms": 20.45
+          }
+        ]
+      },
+      "dropout_l3": {
+        "condition": "dropout_l3",
+        "scenes_tested": 3,
+        "arrivals": 3,
+        "arrival_rate": 1.0,
+        "mean_route_completion": 0.9607,
+        "mean_latency_p95_ms": 20.35,
+        "scene_details": [
+          {
+            "seed": 4300000,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 182,
+            "route_completion": 0.9657,
+            "latency_p95_ms": 19.9
+          },
+          {
+            "seed": 4300001,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 155,
+            "route_completion": 0.9574,
+            "latency_p95_ms": 20.58
+          },
+          {
+            "seed": 4300002,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 172,
+            "route_completion": 0.9589,
+            "latency_p95_ms": 20.57
+          }
+        ]
+      }
+    },
+    "Arm A": {
+      "clean": {
+        "condition": "clean",
+        "scenes_tested": 3,
+        "arrivals": 3,
+        "arrival_rate": 1.0,
+        "mean_route_completion": 0.9615,
+        "mean_latency_p95_ms": 3.5,
+        "scene_details": [
+          {
+            "seed": 4300000,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 190,
+            "route_completion": 0.965,
+            "latency_p95_ms": 3.57
+          },
+          {
+            "seed": 4300001,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 164,
+            "route_completion": 0.9598,
+            "latency_p95_ms": 3.48
+          },
+          {
+            "seed": 4300002,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 183,
+            "route_completion": 0.9598,
+            "latency_p95_ms": 3.44
+          }
+        ]
+      },
+      "occlusion_l2": {
+        "condition": "occlusion_l2",
+        "scenes_tested": 3,
+        "arrivals": 0,
+        "arrival_rate": 0.0,
+        "mean_route_completion": 0.4701,
+        "mean_latency_p95_ms": 3.53,
+        "scene_details": [
+          {
+            "seed": 4300000,
+            "arrived": false,
+            "crashed": false,
+            "offroad": false,
+            "steps": 250,
+            "route_completion": 0.4501,
+            "latency_p95_ms": 3.48
+          },
+          {
+            "seed": 4300001,
+            "arrived": false,
+            "crashed": false,
+            "offroad": false,
+            "steps": 250,
+            "route_completion": 0.5001,
+            "latency_p95_ms": 3.65
+          },
+          {
+            "seed": 4300002,
+            "arrived": false,
+            "crashed": false,
+            "offroad": false,
+            "steps": 250,
+            "route_completion": 0.4602,
+            "latency_p95_ms": 3.45
+          }
+        ]
+      },
+      "occlusion_l3": {
+        "condition": "occlusion_l3",
+        "scenes_tested": 3,
+        "arrivals": 1,
+        "arrival_rate": 0.3333,
+        "mean_route_completion": 0.7175,
+        "mean_latency_p95_ms": 3.51,
+        "scene_details": [
+          {
+            "seed": 4300000,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 237,
+            "route_completion": 0.964,
+            "latency_p95_ms": 3.55
+          },
+          {
+            "seed": 4300001,
+            "arrived": false,
+            "crashed": false,
+            "offroad": false,
+            "steps": 250,
+            "route_completion": 0.6503,
+            "latency_p95_ms": 3.52
+          },
+          {
+            "seed": 4300002,
+            "arrived": false,
+            "crashed": false,
+            "offroad": false,
+            "steps": 250,
+            "route_completion": 0.5382,
+            "latency_p95_ms": 3.46
+          }
+        ]
+      },
+      "boundary_l2": {
+        "condition": "boundary_l2",
+        "scenes_tested": 3,
+        "arrivals": 3,
+        "arrival_rate": 1.0,
+        "mean_route_completion": 0.9601,
+        "mean_latency_p95_ms": 3.53,
+        "scene_details": [
+          {
+            "seed": 4300000,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 183,
+            "route_completion": 0.9622,
+            "latency_p95_ms": 3.41
+          },
+          {
+            "seed": 4300001,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 158,
+            "route_completion": 0.9581,
+            "latency_p95_ms": 3.58
+          },
+          {
+            "seed": 4300002,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 174,
+            "route_completion": 0.96,
+            "latency_p95_ms": 3.6
+          }
+        ]
+      },
+      "boundary_l3": {
+        "condition": "boundary_l3",
+        "scenes_tested": 3,
+        "arrivals": 3,
+        "arrival_rate": 1.0,
+        "mean_route_completion": 0.9626,
+        "mean_latency_p95_ms": 3.43,
+        "scene_details": [
+          {
+            "seed": 4300000,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 216,
+            "route_completion": 0.9656,
+            "latency_p95_ms": 3.51
+          },
+          {
+            "seed": 4300001,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 195,
+            "route_completion": 0.9583,
+            "latency_p95_ms": 3.38
+          },
+          {
+            "seed": 4300002,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 214,
+            "route_completion": 0.964,
+            "latency_p95_ms": 3.39
+          }
+        ]
+      },
+      "dropout_l2": {
+        "condition": "dropout_l2",
+        "scenes_tested": 3,
+        "arrivals": 3,
+        "arrival_rate": 1.0,
+        "mean_route_completion": 0.9602,
+        "mean_latency_p95_ms": 3.41,
+        "scene_details": [
+          {
+            "seed": 4300000,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 190,
+            "route_completion": 0.9619,
+            "latency_p95_ms": 3.56
+          },
+          {
+            "seed": 4300001,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 162,
+            "route_completion": 0.9593,
+            "latency_p95_ms": 3.35
+          },
+          {
+            "seed": 4300002,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 182,
+            "route_completion": 0.9593,
+            "latency_p95_ms": 3.33
+          }
+        ]
+      },
+      "dropout_l3": {
+        "condition": "dropout_l3",
+        "scenes_tested": 3,
+        "arrivals": 3,
+        "arrival_rate": 1.0,
+        "mean_route_completion": 0.9624,
+        "mean_latency_p95_ms": 3.38,
+        "scene_details": [
+          {
+            "seed": 4300000,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 186,
+            "route_completion": 0.9648,
+            "latency_p95_ms": 3.24
+          },
+          {
+            "seed": 4300001,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 161,
+            "route_completion": 0.9592,
+            "latency_p95_ms": 3.44
+          },
+          {
+            "seed": 4300002,
+            "arrived": true,
+            "crashed": false,
+            "offroad": false,
+            "steps": 180,
+            "route_completion": 0.9632,
+            "latency_p95_ms": 3.47
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,5 +1,0 @@
-{
-  "completed": false,
-  "current": "waiting_for_experiments",
-  "error": "Traceback (most recent call last):\n  File \"/home/auronox/Desktop/mini-wa-jepa/scripts/audit_stage7_delivery.py\", line 28, in audit\n    if status.get('error'):raise RuntimeError('Experiment pipeline stopped; inspect remaining_status.json')\n                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nRuntimeError: Experiment pipeline stopped; inspect remaining_status.json\n"
-}

@@ -1,5 +1,5 @@
 # Compatible with the accepted simulator's NumPy 1.26.4 (do not upgrade it).
 numpy==1.26.4
-pyarrow==18.1.0
+pyarrow==23.0.1
 rerun-sdk==0.22.1
 marimo==0.25.1

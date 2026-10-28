@@ -17,7 +17,11 @@ def main():
     p.add_argument("--output", type=Path, default=Path("artifacts/stage1/rocm.json"))
     args = p.parse_args()
     installed = {d.metadata["Name"].lower() for d in metadata.distributions()}
-    forbidden = sorted(n for n in installed if any(
+    # The shared environment also serves Unsloth, which requires AMD Triton.
+    # Project execution remains eager/SDPA MATH; importing Triton is still rejected below.
+    shared_environment = Path(sys.prefix).resolve() == (Path.home()/'.venvs/llm-rocm').resolve()
+    optional_accelerators = sorted(n for n in installed if 'triton' in n)
+    forbidden = sorted(n for n in installed if not (shared_environment and 'triton' in n) and any(
         s in n for s in ("triton", "flash-attn", "xformers", "nvidia-", "cuda-python", "cupy")
     ))
     assert not forbidden, f"Forbidden packages: {forbidden}"
@@ -31,7 +35,8 @@ def main():
                   device=torch.cuda.get_device_name(0),
                   memory_bytes=torch.cuda.get_device_properties(0).total_memory,
                   python=sys.version, seed=0, sdpa_backend="MATH",
-                  forbidden_packages=forbidden,
+                  forbidden_packages=forbidden, shared_environment=shared_environment,
+                  installed_optional_accelerators=optional_accelerators,
                   git_commit=subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip())
     a = torch.randn(512, 512, device=device)
     b = torch.randn_like(a)

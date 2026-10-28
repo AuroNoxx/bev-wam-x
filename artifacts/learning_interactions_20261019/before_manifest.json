@@ -1,5 +1,0 @@
-{
-  "git_commit": "14373760ab74275f36fc9f4a4e13cdb14d07b7f4",
-  "goal_sha256": "51b84b37383b07c730271db4fea9a15d93c305d3afe1669455971a2eebf569a2",
-  "scope": "Refactor chapters0\u20135, then add chapter6; native marimo only; preserve formal experiments"
-}

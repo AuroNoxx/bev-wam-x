@@ -1,0 +1,94 @@
+{
+  "protocol_version": "BEV_WA_ALIGNED_V1",
+  "date_user_timezone": "2026-10-22",
+  "stage": 1,
+  "title": "Base Interface Compatibility Regression",
+  "git_commit": "58fedae458021bb37212442868288f95947288a8",
+  "modules_tested": {
+    "control_wiring_attestation": {
+      "unit_rejection_idm": true,
+      "unit_rejection_mismatch": true,
+      "live_steps_tested": 10,
+      "live_mismatched_steps": 0,
+      "passed": true
+    },
+    "dynamic_straight_control": {
+      "peak_speed_m_s": 6.090159416199814,
+      "braking_steps": 16,
+      "braking_time_s": 1.6,
+      "braking_distance_m": 1.284,
+      "stopped_speed_m_s": 0.00466943485668833,
+      "max_rest_speed_m_s": 0.006150652654477192,
+      "resumed_speed_m_s": 5.325306415560279,
+      "total_steps_executed": 71,
+      "passed": true
+    },
+    "dynamic_curved_control": {
+      "entry_speed_m_s": 5.390831171757123,
+      "entry_yaw_rate_rad_s": -0.14627145971150668,
+      "braking_steps": 9,
+      "braking_distance_m": 1.124,
+      "final_speed_m_s": 0.008083254268639968,
+      "crashed": false,
+      "out_of_road": false,
+      "passed": true
+    },
+    "coordinate_temporal_alignment": {
+      "bev_shape": [
+        4,
+        128,
+        128
+      ],
+      "bev_dtype": "uint8",
+      "transform_roundtrip_err": 0.0,
+      "history_lags_steps": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "future_bev_steps": [
+        5,
+        10,
+        15,
+        20
+      ],
+      "future_traj_steps": [
+        2,
+        4,
+        6,
+        8,
+        10,
+        12,
+        14,
+        16,
+        18,
+        20
+      ],
+      "boundary_masking_verified": true,
+      "passed": true
+    },
+    "destination_and_permissions": {
+      "permissions_per_lane": {
+        "lane_0": [
+          false,
+          true
+        ],
+        "lane_1": [
+          true,
+          true
+        ],
+        "lane_2": [
+          true,
+          false
+        ]
+      },
+      "destination_arrival_step": 182,
+      "destination_arrival_speed_m_s": 6.999989986419836,
+      "destination_route_completion": 0.9639565504510779,
+      "passed": true
+    }
+  },
+  "all_passed": true,
+  "duration_s": 39.39
+}

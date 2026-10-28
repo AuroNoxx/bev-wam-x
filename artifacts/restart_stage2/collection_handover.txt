@@ -1,1 +1,0 @@
-Planned SIGINT checkpoint of the serial collector; resume its flushed v2 data under train_S, then schedule two isolated workers. This is not a native failure.

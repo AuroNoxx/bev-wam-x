@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Rerun 时间线
+Comment=打开最新的 bev-wam-x Rerun 时间线
+Exec=/mnt/ai/projects/bev-wam-x/rerun.sh
+Icon=utilities-system-monitor
+Path=/mnt/ai/projects/bev-wam-x
+Terminal=false
+Categories=Development;Science;
+StartupNotify=true

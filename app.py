@@ -47,7 +47,7 @@ def _():
 def _(CHAPTERS, mo):
     chapter_select = mo.ui.radio(options=CHAPTERS, value=next(iter(CHAPTERS)), label="选择学习章节")
     mo.sidebar([
-        mo.md("# Mini-WA-JEPA\n\n从一张地图，学到世界模型。"),
+        mo.md("# bev-wam-x\n\n从一张地图，学到世界模型。"),
         chapter_select,
         mo.md("**每次学一件事**\n\n选一个小节 → 动手操作 → 看画面与解释 → 展开中文代码。\n\n滑块可拖动，也可用左右方向键逐步查看。切换章节会保留已有参数。"),
     ])

@@ -35,5 +35,11 @@ class Stage3Config:
     visualization_interval_steps: int = 400
     visualization_sample_ids: tuple = (0, 512, 2048, 4096)
     visualization_seed: int = 20261017
-    sdpa_backend: str = 'MATH'
+    sdpa_backend: str = 'AUTO'  # AUTO = PyTorch ROCm selection (AOTriton flash on gfx1100); MATH = pure math for reproducibility
+    residual_target: bool = False  # predict future_latent - current_latent (removes copy-current shortcut)
+    residual_horizons: tuple = ()  # empty = all; e.g. (0,1) = hybrid residual for +0.5s/+1.0s only
+    dynamic_loss_weight: float = 0.0  # upweight BEV tokens where the future differs from the current frame
+    masked_completion_weight: float = 0.0
+    mask_ratio: float = 0.25
+    masked_horizons: tuple = ()  # empty = all four future horizons
 

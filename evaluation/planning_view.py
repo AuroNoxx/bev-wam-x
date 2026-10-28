@@ -5,7 +5,8 @@ from mini_wa_jepa.visualization.rerun_logger import colorize_bev_4ch
 from planning.candidates import TERM_NAMES
 
 
-COLORS=('#28b4ff','#ff6464','#64dc64','#ffc828','#c864ff','#ff9632','#32ffc8','#bdbdbd')
+COLORS=('#28b4ff','#ff6464','#64dc64','#ffc828','#c864ff','#ff9632','#32ffc8','#bdbdbd',
+        '#e040fb','#00e676','#ff1744','#651fff','#00b0ff','#f50057','#ffd600','#76ff03')
 
 
 def decision_figure(data,index,chinese=False):

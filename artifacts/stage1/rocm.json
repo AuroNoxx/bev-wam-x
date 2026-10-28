@@ -1,6 +1,6 @@
 {
-  "torch": "2.9.1+rocm6.4",
-  "hip": "6.4.43484-123eb5128",
+  "torch": "2.9.1+rocm7.2.1.gitff65f5bc",
+  "hip": "7.2.53211-e1a6bc5663",
   "cuda_build": null,
   "available": true,
   "device": "Radeon RX 7900 XT",
@@ -9,11 +9,16 @@
   "seed": 0,
   "sdpa_backend": "MATH",
   "forbidden_packages": [],
-  "git_commit": "711e60581b8a2a67bd1b4d5d74356256d97080f7",
-  "matmul_ms_first_call": 71.5271360004408,
-  "matmul_relative_l2": 4.0531305126139037e-07,
+  "shared_environment": true,
+  "installed_optional_accelerators": [
+    "triton",
+    "triton_kernels"
+  ],
+  "git_commit": "58fedae458021bb37212442868288f95947288a8",
+  "matmul_ms_first_call": 111.68415900101536,
+  "matmul_relative_l2": 4.0569703177867926e-07,
   "sdpa_fp32_max_abs": 3.5762786865234375e-07,
-  "bf16_relative_l2": 0.0032015335746109486,
+  "bf16_relative_l2": 0.0032015370670706034,
   "bf16_finite_forward_backward": true,
   "triton_imported": false
 }

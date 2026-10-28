@@ -1,0 +1,2603 @@
+{
+  "protocol_version": "BEV_WA_ALIGNED_V1",
+  "stage": 7,
+  "title": "Full Integrated Driving Closure",
+  "date_user_timezone": "2026-10-22",
+  "provenance": {
+    "git_commit": "58fedae458021bb37212442868288f95947288a8",
+    "git_dirty": true,
+    "goal_sha256": "513ce800f086557e63d9bd95a6b84e47cd8b9fe5c85c186d33fdbce0b552f6b0",
+    "source_tree_sha256": "a20a67faca6f75498e5c2d5215904b5e9bb5122024f27219bc430fd173ca67b9",
+    "source_files": {
+      "configs/stage1.py": "f2d3bde787a068f1b00e9cf636e7de5a33667811520d803564d21d646e83e9e7",
+      "configs/stage5.py": "5ec37edb7b5d35cfa25c876f462ea32fd9d12f082c59d5a291366b0185309796",
+      "configs/stage7.py": "32ccb3a32a083346838421036bf6a0cb3da295d70d60a34cd2d5d91300e76c49",
+      "configs/stage6.py": "582b75c98b91e5c67efbddd3a2e9db564b52585dc8c74b6804d35c6e356ac00e",
+      "configs/integrated.py": "e692ad332eacf74f6dcee8e1a35cfca2759444b6241c50d484b071ec4c986740",
+      "configs/planner7.py": "78f1d6537c3253926cb13056c7faf415388a8fdeca37d56fbc78f76af099291b",
+      "configs/stage2.py": "6629ecb0d86a5a6da9b1cef90412a4e5bc20cc47719bfead8cd594e9fcae7dfb",
+      "configs/stage3.py": "86c1c4aaaa67303ea5eef50c2a8fdd1eaa03c94c188519f6098281ffe09ec500",
+      "configs/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "configs/stage4.py": "6602dfdeea9aaf5629d6a026f34ad78c748f66adf78eb62a168c7eeec79efeb3",
+      "controller/trajectory_tracker.py": "4e5f88febacdeec88fe908c712745b73076bbca3dbf2ba13bf3e713808795bb0",
+      "controller/pure_pursuit.py": "2e661c0f2d8da49636aacc61c9d667b70685a0fb9e134bee122ecdc74737dd6b",
+      "controller/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "dataset/joint.py": "0cc48fb08302ef99020562ea91f900feec4359a940de09b8b25146ca8c6bf11a",
+      "dataset/augmentation.py": "210a5432e543d70a7c77f4d40ec8f6325b9b8a0bb30c2ed6adf380df1faecd69",
+      "dataset/bev_wa_dataset.py": "2dee07bfeed13fbc37ca8bfbd94db416bd993d33ae5e59bc48b554a9e30da639",
+      "dataset/latent.py": "c6bb933930464bd4ba33e0e207298af43581e63ab3d9cf58cff5b82951e45f59",
+      "dataset/sequences.py": "d6a5e597d34af2382e2f38752c19e46d3dcff478249a8156f003845c372ddc36",
+      "dataset/branch_features.py": "635a1c551642887e794fe3310ee81c8c565bbfc5bca7bed6f3230e07789d8b42",
+      "dataset/storage.py": "86b11b4d8e3bf941c9a63d8b00d26e6077cf54904b1ef356a5135970c807650e",
+      "dataset/navigation.py": "b8c1b6efd0dac4ef167c98e0bef0503d07224d0c3823395c5140ce13950669b6",
+      "dataset/baseline.py": "7996b12481669d7cfcb47e5912abfee2a98b130cfff207079d96ae84f9a3c3e5",
+      "dataset/risk_features.py": "9b4f1f5c6c9ac5913ef39c084914391a43abcccdb878c73daf86c91e40904567",
+      "dataset/action_branches.py": "036cb33e48a0bf9498d5177c4c8cfcb6aa85ef0a77ad23cd047bb90ca9310857",
+      "dataset/recording.py": "18dc0c3cf5fd94f8facf5dbf2882826bf98aa37503a69286e02af27027dacff2",
+      "dataset/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "dataset/flow_features.py": "08a9f0d62bba39d494c7cd9a910dc13fcf7a651142f2ac9a2b003d131b1de230",
+      "env/semantic_bev.py": "5d923a77fba6c36c42c1facde8b7b864e67a0d862cbc0e7881a3a9ba6d3b177b",
+      "env/traffic_teacher.py": "20f0c88d0886532d602d6332a3009682e2af58c4a9f1b1feed0a57ec93bb6c51",
+      "env/data_v2.py": "816b2f2e5206efdd53d765ae30dc1c19afc4701cb5d1fdbbb62dc474aaf63093",
+      "env/render_compat.py": "312a6e1184a53320325fabd6a69052b0438c8c2cb657466fb7f82a2f3eed0820",
+      "env/verification.py": "846cb1a78cb2e1e792eb5915a47675134049e975e57f930f03845da047053130",
+      "env/navigation.py": "cd003f35068ce817d8b82f3780416aa03ee9b536f9224109a5485b137e856a57",
+      "env/expert.py": "861a477d0d364e6424a2b36381313ff59d6039ec43fbcb6b1e911ca41bbf70e1",
+      "env/lane_permissions.py": "31dc70a1a72651cb56d52f1b68f62ecd2431918b675db2fc56be8ae7eb1a728c",
+      "env/ground_truth_bev.py": "d99db3c3f71562390f7bb013052638dca7a7859613d5eb5917613e18f607ef63",
+      "env/integrated.py": "d29f8ef18ec3492453a1a8ed8d7ae8462c5f8b3ff83f920c930eb3bc5a76f88c",
+      "env/integrated_scenarios.py": "77f0f86d4156fa53aa5b557f5f2c868ccd462261a02808a3cc47743d2ae6a5f1",
+      "env/stage2.py": "4c1a42cd379600cc1dc5b79b9e72c19a7a780a153fbc5d96c4e9c5e720988292",
+      "env/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "models/joint.py": "0e69b7d718f868ac500c14c810d9bb3aa23841b3854fa2469279415bab5d1819",
+      "models/navigation_encoder.py": "54b4b4575898d1b0c27d5877521b9e22935841a8e7c7d6343d1eae9f27f476c8",
+      "models/flow_matcher_structured.py": "122c02836dc7f350996d589e6c2c463de1bb7715c9f059466a921dd5ef4a2b47",
+      "models/action_conditioned.py": "7f7d6618a6f882ecbcdcfaa6ae9aedadfe7ca0359be301c4c6451cbd5ab0a45c",
+      "models/flow_matcher.py": "9fef64bec5f7238dfa32281b63c33bacb7a7542f30113103d9ec44303a6ee2d7",
+      "models/latent.py": "ef2da5aca4113967636979d7071a8c9a36295534cedb66893361d0f5fd8e690d",
+      "models/flow_matcher_residual.py": "e4c0f53ffa59dc970ed1a3c085e7700d157edffa3ec8780bec86329c55d3a29b",
+      "models/navigation_flow.py": "e06288b18e41b9070b2e05e378846c9bda32850dfc6f8a062cb0942e2f92fed8",
+      "models/integrated_physics.py": "152e9463b4691d23f82fa57cd23dfe2425ca63954e749183df8e69e2208fd944",
+      "models/navigation_head.py": "d2d98f00c722e9f67c264006370ace09d0835961db76acf43fe5ea0fe8947ce6",
+      "models/flow_matcher_transformer.py": "6365f1aef2dde385a5f17c32722439f28ba7e45f801ef48b49fbf67bb6d05b1e",
+      "models/risk_head.py": "441561d297f47e10a63df182c4347f578c46c6211ccc865655dd9ed3b94b7786",
+      "models/baseline.py": "e858e1474b523b2fe4a540f2d0c9c9b80ae455e193c546075572f590ae15b5f8",
+      "models/flow_matcher_metric.py": "a6ab018b1a5703aa9c969d1776ccf9bc0923f7d6be87a32fff02f3f0076a50eb",
+      "models/integrated_world.py": "45c8e0a25dfb2babeab3d4688b391365993400523065ac4b8a330cd7c753debf",
+      "models/bev_wa_joint_flow.py": "a83a8c1c1b0566cdb85c53a55884cee7186b7e1543f6501cbccce53fcc4dbaa9",
+      "models/__init__.py": "4ba0ff0258151bda233d78bc233fbb074b0f83ff85cca18ebb7a76d6008a50cc",
+      "models/bev_wa_latent_flow.py": "77acd309cf0c29704f75d166e67f32ff68d63e8137ac7ef95a0a2f41bd443f2f",
+      "training/joint.py": "12bd91874cbe0f012796507722fddcc7f532872904feb1d2aa14b9efb5101451",
+      "training/action_conditioned.py": "1104809509c38b27bfa683fd7281ae7df07de33c210ea2cbfa7f8a5b0494a2d1",
+      "training/latent.py": "8646923c8f325d8e4096fe270834bdc37639c5568f9cba66ff0b98bd48a50fb2",
+      "training/joint_loss.py": "603668ecb8ce0133b22c7a597f3f4c79ebb03ad63ba174d6eff62d28dee39442",
+      "training/baseline.py": "731bbbfecfc9df72b5e5f631a8b752accb11563182bf1e99d9a2d3aec3f68782",
+      "training/flow_matching.py": "f6b17606a36de572aee00c3b69118f87d45353e7e7c71eb8105df9399e2c41e6",
+      "training/vicreg.py": "65399ffdbc4c1ffd451fc1658275ac785210b9adf9604f1bb3f6dba60d6026c7",
+      "training/__init__.py": "1449db082908f765c87bffa8e58e0ea6182a0f8d012ba5bb0e84803b8de47387",
+      "evaluation/action_conditioned.py": "ffe2b34f281e3307a4058c69d5760fa21cef57afa774039696eb756cb44b42b1",
+      "evaluation/latent.py": "5ab590794e71fe86e84481f33f71d04adf1e99d74f19c71e6b72b9e84efcbebf",
+      "evaluation/planning_view.py": "7cc29268c6c188b9841d3a57bf0351f4cf08a530412372aadbd857479170ceb9",
+      "evaluation/stress.py": "41b55327281c8715fe942b66dc96fdeb557dc09a44acf62257bd7dc6aa3c9abb",
+      "evaluation/degradation.py": "462ba14fdea774ed25ffe4d6ff0150e15ae25fb54031df8fbf3a332c097eb131",
+      "evaluation/memory.py": "6875eda59f03453dd2f696114d4de33ba8ac25bd34bf4621eacc12c242d6a4fc",
+      "evaluation/visuals.py": "5da09d3fd71eb51b13b3d109bdf98d3b90ea2c4dec4d8ee26f7272276fefa262",
+      "evaluation/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "evaluation/risk.py": "aec9c6f2a61fbb8aa7fce3f1b0a82cd40e49ac0f0b60df5ec4de00a87e29ba87",
+      "evaluation/stress_visualization.py": "4149e8b0135840433e041fefb348993a90c3ba11633c1b7f1488d8105b618660",
+      "evaluation/history.py": "8a41057e1d529178f3a70682c9f91c7f39a8029bbdb92795544886c07be12d1f",
+      "scripts/calibrate_hardware.py": "e14650d6e914c095bcde407aa47309e56bfc8f3e0dabb2c99a9eb737a982f869",
+      "scripts/train_latent.py": "0f5fd6162a7752db3afb92aed3c1d971bbcfaabc8ccf128a19fd8989434165a0",
+      "scripts/report_stage6.py": "404c14e84c3bc78c4a1ae9b69b0c4d40240772fa5d8719dcc303d2fbd81980c1",
+      "scripts/evaluate_stress_open_loop.py": "087f135f5c0cce3b6f4ba2e3e9fcc3875deef5ce4dcfa81aed70415cb0c6c20f",
+      "scripts/collect_integrated_navigation.py": "2a174698936bd87b14678f8c7410232441bddbe84202ffb782f0131cf9cbb337",
+      "scripts/compare_operators.py": "9e448d74359208c9fa67d80909b4d3cb0cf75dc0250ba678888dc6271408cb4d",
+      "scripts/collect_integrated_risk.py": "3092afdb1cdd5a07c321dc79fb25115ef5f1dbb5fac5a81fd61b3287e3e352d0",
+      "scripts/preflight_risk_collection.py": "8d7b4eae1dca2d4bd216052990b7e7ed7db7575372a1887d80fffc8802119302",
+      "scripts/preview_planning_view.py": "f85d0d3a32056b9e598a4f505eda1b9d3f8559ae04c79232aa1f4fafe5065a26",
+      "scripts/run_integrated_risk_pipeline_015.py": "f147f81cbe833e1dfe275ee14f5e5857e9bc516e1f99e8daf0592faf1e003aa3",
+      "scripts/monitor_stage4_memory.py": "0b1092d1bca1646b108d0da6420607c6b9defcadbbefd8f7643d7830c4e70507",
+      "scripts/export_stage7_flow_path.py": "decd9d6d9bc4a08505d45fa8df840320f016fb212fb6df7cb83dc2effe25ca7c",
+      "scripts/audit_stage4_delivery.py": "11282070d8face390b4613cbaae62b19d16314e5698880252b0475efb3c3db20",
+      "scripts/train_navigation_flow.py": "914087dc24922d2e7ce99399f37d8a61ab05bc8acbd555e1322d16f42bee3ceb",
+      "scripts/recover_stage7_motion.py": "e8a98fc2af98bc376fbccb5cd79df6f1956a5797ba32a191895ad6fe4c96759f",
+      "scripts/visualize_stage3_test.py": "8b471d145c25f29abb28630efa5848d83b5690065518c5a25c0867c9140a0be1",
+      "scripts/audit_stage7_structured_ablation.py": "565224e9562e6e31d5f152c5c3aaf65b7aaac1722933ab234c1975edefba8e3b",
+      "scripts/report_stage3.py": "66faa0a08a1ba921f34f021b69d4edf572bac935e3a717adce1e6277dd796c55",
+      "scripts/run_stage7_remaining.py": "d87d1d87ab166dd2cbbcc67158f5938968d78f998e04566c5b561708ec25651e",
+      "scripts/run_stage7_metric_ablation.py": "6aeb5b146cf182cf894ad396abc4b5c33b1661c7e8bc8f6f2b5c26a97fb4a175",
+      "scripts/collect_stage2_parallel.py": "7515782919281fc3adec6c36c569b07369ea34b7d82c651552779c6b96a79a9e",
+      "scripts/visualize_stage1_rerun.py": "4435046435a7328f7509ad75eec3c0eac1bb43d24724311206067737fc444d16",
+      "scripts/expert_drive.py": "f60784ead54f6c76fe9f331482318777b42d5e7cc9cdffbc31b17d8d670545d3",
+      "scripts/probe_road_termination.py": "33192afe7811147e93ef54446812591949ae54bc392ca046991304f7e6f8ab25",
+      "scripts/train_action_conditioned.py": "d64a254103870fb2910301afbb77ae57c10e76295936b4e6fea5ebdda20cc487",
+      "scripts/calibrate_temperature_val.py": "358062356f23422a200adf007cd1e9e559632f899c7b4c5bbeab60b12b7bc4ca",
+      "scripts/report_stage7_structured_ablation.py": "e09d68fc8aeb95aeb3aa70e2f39644fa4761b186928ac84f51ca748999e595bb",
+      "scripts/run_step2_residual_ablation.py": "e88f1c7c2bfab7272330f554e697b0a6511c89a48ff5e1326b3a8830aafc00cc",
+      "scripts/audit_traffic_teacher.py": "643d0b1d7367ae7a5245b419d10cc14c787d10f6f0ac5d730a834e52b51c22ed",
+      "scripts/generate_case_visualizations.py": "e471dbeb3af95f9ea16cdd3044155690872e93f5364c2b8914dddf20d2e34357",
+      "scripts/audit_integrated_navigation.py": "a5b5b6e1a50f1d33716f2af69e2fc659c1bc836e01bc74a816608d1ab3e0b1b4",
+      "scripts/collect_stage6_branches.py": "0595b093191d6f965de838cef6878f5d5058fa5ca0f30f1ba53cd4e0b8cb4286",
+      "scripts/merge_stage6_branches.py": "df2297df7665054ef330779b3c7e71f1307483ff341830983a2a0c5f1edcd9c2",
+      "scripts/verify_stage1_v2.py": "1281d84202f43f988d0d7a450d0e622c03d620b36a04315cc00ee43d7d5bb87e",
+      "scripts/report_stage5.py": "fb42b40c9129e218770a807dcac03b5403383a81ce1723ba204c3a467e029951",
+      "scripts/train_flow_matching.py": "906430963ac20a2f9fd9266e6eb40b80b81fcb99f5ea38eb9c04d1d1c8c9e7ba",
+      "scripts/run_bev_wa_stage3.py": "cfec92dba742110d42771343bf7ea8565a67711d0775bde5a5570140c74066e0",
+      "scripts/probe_keyboard_desktop.py": "434904ab11b3145678e7f91bc9043117ad6eb1123cf089af5a15d81e88375239",
+      "scripts/probe_integrated_braking.py": "412c0f23a733035f66ccaeb67f2ba4b40e93117f4d4c9983147316e140ab4480",
+      "scripts/evaluate_stress_closed_loop.py": "21eaa53546ece2174ebcb61a1f3a0077ba9d32c84f5dff25f050c77677794533",
+      "scripts/dashboard_marimo.py": "ab2d85a059f6f08fc6ae8ab3745e939f3a096044387a2b421dcb878c686cbd04",
+      "scripts/cache_stage6_features.py": "c1629d33c0b38c5e1338261897f4905f0fde0002e4e6dc3487a92d9fa4895669",
+      "scripts/run_bev_wa_stage6.py": "17e15892e835b4b2e0590e2f03b7adaee7f804af6284fd246e972ef0ee64fe03",
+      "scripts/run_stage7_structured20_ablation.py": "1c2561f8a52bd2a3c5266c04accacbf6330cc9afdb5b8ce182ffb2d33af3c06b",
+      "scripts/diagnose_egl.py": "bb84567f5ec8627001f8527dee3a02c8c01986cab099ce7e18a26cb22742ce0e",
+      "scripts/run_integrated_risk_pipeline_014.py": "170bd97c024775f7566ca660d1cc52b90f2b2bb3ab5f56cdd443fd8fe031f915",
+      "scripts/inspect_data.py": "569fdd0e9992dfecd5623a9bd7060f8b5e00931acd0a0dd017ce47cbf2aeb52f",
+      "scripts/gate_check_risk_head.py": "ba20a3ccdb00f75720917639544bdbb130b788951be223ebca0315c29c705246",
+      "scripts/report_stage7.py": "c6b6bc53ff871f613a4204afeb9d47fd991a472b1ed20703f3524505b0a59719",
+      "scripts/train_baseline.py": "128e81a988b41cb7ce0a17c8c385b7c967dfb97d56292f61b6c094ab0488a94f",
+      "scripts/run_bev_wa_stage2.py": "4c9af159a5b2050ea30db20bb9de33fbecef459f085f7fa56d179664dd441931",
+      "scripts/report_integrated_pilot.py": "0a6183c4366c1773f119e69f55b2516c80cee7123f1ae0d2076e406e42665b02",
+      "scripts/plot_stage4_memory.py": "16eecc637b2a154800a76defdc6c287a39eeca90e23c9f7d85b3f9cc37d809c6",
+      "scripts/analyze_stress_cases.py": "10941bfc9714df4c1f30a842e6c3d4e4184fbc74f8610a28af814c0c0532089d",
+      "scripts/evaluate_expert.py": "ea780b0db3f3e46150afca158fec21762009e0ded1560c437d8d96600d2f2fb2",
+      "scripts/train_joint.py": "917c16e7718951e1504bc79f659ab89c7fb0ec67fc36adb64900b44eadb73c21",
+      "scripts/benchmark_metadrive_pilot.py": "48de0a6a5b069b68cfbbd14ffa2adc1370857739492bcabb1220496de26115bd",
+      "scripts/report_navigation_startup.py": "b1841b16d9760026e6e4a3d23d4594f964658c15a7da55a2204d90f773015832",
+      "scripts/cache_stage7_flow_features.py": "082e77707b147a8e00ff5481029a8d7495b02712990504171ebbe3e7ac2b1c5c",
+      "scripts/evaluate_flow_matching.py": "e03b09d417525c61ff8c14604827004c9bbaff73fca0d57fcc654446ce132008",
+      "scripts/evaluate_formal_test_transformer.py": "398319e9f646e37f52a5d9fd23c836ef276b0c9db358f0afd57c71f37e804fb1",
+      "scripts/train_stage7_risk.py": "5cb6580edfaf0db1616c61d5f1a2e2f0f071ce0213fff7aff6dc3e1a4d888970",
+      "scripts/evaluate_joint_closed_loop.py": "45696621d5afa5384936a4ab9bf068bdb9dfe779e64e53d4c10b7750579a6cee",
+      "scripts/replay_data.py": "170e4bf1b70f225fc4c19f806de055a3193311e090f5e83f86be2c9de22bb855",
+      "scripts/run_bev_wa_stage5.py": "6b6c4c088dfd765e8ea2ebf141710e366f2aa346fd891c3103d8c333797d02e8",
+      "scripts/render_public_driving_demo.py": "affbc64bafe22cd4d9bc2245e49503a81316857d637eb7ea3435a3d40d87975c",
+      "scripts/check_desktop.py": "017e1faa196e0f33b8640ca4149a7e1478211b947e989b930da6bca36a86ddab",
+      "scripts/collect_data.py": "fd2c017dde4e8b9e9c720154506a0f9885d3c9e3f98df75480671d30ffeb6413",
+      "scripts/audit_stage7_delivery.py": "8c7de61f4b3eea24670db3ccc6100c410dcd164ab983ec64eabf27db3ecb4c85",
+      "scripts/run_bev_wa_stage4.py": "0c558ac4e76d6ed7c51a190496c3dca592d77c0b5569786a7f6b1d79bcc350e1",
+      "scripts/run_integrated_learning_010.py": "057e8c9c4f2a0076941cd2bb1e761ae9ea1eed10fc11ffc6f12bfde60b9250a8",
+      "scripts/evaluate_navigation_flow_pilot.py": "627ddf8f277501abc6c55b818caa39f85dba82ff8a97cca9de80b366c39e4c96",
+      "scripts/probe_semantic_bev.py": "b55e2002748cd9143e075d333e53c7f86494610a805df036ebcbf6a5c0278221",
+      "scripts/merge_integrated_navigation.py": "0506f8af26a7f532fa045ea9bb1cf10555235cbb1e165415b5f2baeae5ad26a3",
+      "scripts/run_stage6_suite.py": "c321158cc0e1aa55f346325e38852b01d88ce9e620b80af07bf01fdc5f6053bf",
+      "scripts/train_integrated_risk.py": "cf46cbb8756483fac1bc1ea82723b02f90a59cb31c853c4fab063667806bedf4",
+      "scripts/cache_stage7_risk_features.py": "cc319ce970f97b0e39485efbb0e7e938823ea0fa5c58c0f97cce87d273827b75",
+      "scripts/run_stage5_closed_suite.py": "391b70ed5993759343970229d0759bacc280f32c0873d2e122ed9c49ecc52785",
+      "scripts/report_stage4.py": "289599d8c7e9d0e990f427912aabb08f93eb7200a05df6dedf7de7f57de4b488",
+      "scripts/evaluate_joint.py": "65afa997e4b77d79f8388333e3d737cb43366b11182489793a23ea9e30e6ba25",
+      "scripts/collect_stage7_risk.py": "55342089b78c798fc6fcccdb929d8ab080d714ea2db2a12d9e1c8998075a5fe1",
+      "scripts/run_bev_wa_stage7.py": "7ed3f23e878d40735505787095a064a8429ac07e8142edd8510c094a06060bc1",
+      "scripts/run_bev_wa_stage1_regression.py": "5839630a2b1b04544b55c075194126dae0b5d8100558e9240828cab3f79be885",
+      "scripts/report_stage7_metric_ablation.py": "7f3483c81b204aef566d7be3b49574d3793ff9f8692df49a966defd05db17b5d",
+      "scripts/check_rocm.py": "16c8c1fcbe262b53318b08d9a667c51092234cb0e4535d7dbfe1ac6217515bdf",
+      "scripts/run_stage7_structured_ablation.py": "8544babf2c4b5bacb4bb358322a23b25b3123080e7899c63679243bff0fda949",
+      "scripts/summarize_stage1_v2.py": "6309ce6d534ad434ddff594131d79f4d66850cc08f15a893f80ccfc6696ea549",
+      "scripts/collect_integrated_traffic.py": "278a079f828eca3a84208e3a769f95c41dc1471d897ec5e207faa7a115fc7be8",
+      "scripts/train_navigation_pilot.py": "c190ddad4e295ceca3eb48bfad8067f315dede81458780a44be810b9f2025d8a",
+      "scripts/report_stage2.py": "19e97fd798b522ee17a5407a665d143a92a90da624a46bbac15be0e88fb9a190",
+      "scripts/reproduce_integrated_control_wiring.py": "b73297cb7f413d72750581419827b1b2713400862fd9019a2b5d8bc5f959fbc5",
+      "scripts/evaluate_stage7_closed_loop.py": "d0153e5e70c599c2233a65983a735a9e324661a87c87cc4fbc616f844b66c25b",
+      "scripts/evaluate_action_conditioned.py": "6b8f51d23968329a00244264485301105ccff5208f4e630d1996f44bc61f64d8",
+      "scripts/audit_stage7_metric_ablation.py": "453a2231c09c0aab96d7c338a5e69c035b956eba26352fb7698ab1eae5ffc9ba",
+      "scripts/report_metadrive_pilot.py": "b253b777f4dc41c679891a5ae951154f4c4d9baffebda453d7e891f7fa5aa850",
+      "scripts/probe_stage7_replay.py": "b65414f6b3754d553f4fcfe79a4885bf8978e5fe20533fd2554c75b51f3b5c82",
+      "scripts/verify_stage1.py": "284d935eac573f0f11ffce689cb019a334f491de2e9552f08734eec9cb29537a",
+      "scripts/evaluate_integrated_driving.py": "ecd9066406ca1e135855f91b66f072749be7adf22e3f57cd6633a46d0b090cd6",
+      "scripts/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "scripts/run_step3_transformer_ablation.py": "9ff46656d8fcf234e2e20c1b91d372703ed4926ae0f81076ff05ab95d9d184be",
+      "scripts/probe_integrated_traffic.py": "73e3286b5f6da6b75c4b6f7f11d26d279dd42b526cf977356233a3118ae6eb62",
+      "scripts/evaluate_stage7_risk.py": "763d0f044f8a7ecfabcc25b208a7f726c2c40659fc71ef4c1b70cc93dfbd5f08",
+      "scripts/cache_integrated_risk.py": "e856e649cf1bce195756be8baf61ab229af571afd4e9338f5977eddae175bd40",
+      "scripts/probe_stage2.py": "f92b45aeda697b2b976182dae7b443d7aaffd1a50950de1edee77c8526fadcec",
+      "scripts/evaluate_navigation_pilot.py": "cde5dbbde7c49b54490ff5641f555d8f2a6c93c80719a3e5182a4db213091093",
+      "scripts/evaluate_stage2.py": "01d72e07fa4313148e6e1ed4be20e0a46d467a59569ee81e23bd03f364218838",
+      "scripts/audit_navigation_contribution.py": "8a89a1d8423e9ffd007a1a9911f339b7caeef2ff7c2196b3fae39db358430b9f",
+      "scripts/complete_stage4.py": "4be6bec994f76af3b1a75f980464b2dfa689c94ade6d367b1a2b592672b34d41",
+      "scripts/monitor_stage7_resources.py": "79c01bd6a0bf8a00011418aa6eebb24a6b2c37e874ee98e066a51efb0afb6146",
+      "scripts/run_navigation_recovery_pipeline.py": "63f9f34c75ca310f168487e28e0055724af87f526c139b97d799e80a57c932d1",
+      "scripts/audit_bev_wa_alignment_phase0.py": "e87fd8b830bb38f15c1406b9a0ad02ff0cfccb97b111f7f8825ad4099b04a810",
+      "scripts/run_stage1_v2.py": "069a19ebc2568804953f2966694563a59cf5e6c8953a99a1717437e3b57bf135",
+      "scripts/demo_rerun_driving.py": "1268a1e042c5eea751de831f472762389f15f2ed515e94618cbfad85b6bbc305",
+      "mini_wa_jepa/bev.py": "f8b9315d9f8def35df4d24e9e9e5693e6cd24efdafa07fe52a9d9c133fa72e5e",
+      "mini_wa_jepa/geometry.py": "86e9d9815ef45bebb2f51cc089041b84638585e542fa7674a5f98fe8558f7a32",
+      "mini_wa_jepa/oom_recovery.py": "d7b5d089c784f844c1ddf62455a0a7ebdafdda7c47e52000ea815f8ad5627b61",
+      "mini_wa_jepa/provenance.py": "b3f5fcc563a9600f385ea3198cbe3e8fc314f6aa7fc5f96dde8da75eca209062",
+      "mini_wa_jepa/__init__.py": "37cc560051ba36bfad39bbdc4b5d5146fbe9b504648ea342a4709b764c5bfbbd",
+      "mini_wa_jepa/calibration.py": "e58a00c7b6bd0e9811a46bc6eacd1ff7fa4d2a7a03a6804c604f2ab7111acb31",
+      "mini_wa_jepa/hardware.py": "fffcf3425c631055467b888b8243e43a25b82c43644f2166859c405558dad097",
+      "mini_wa_jepa/normalization.py": "8d4275a954b4b100a2776e07dbd8eb7abc7ef7b4cd9ea53703d1dbd72d797b5b",
+      "mini_wa_jepa/operators.py": "c268468151dec24f042c58156b609efebe47e7d8bb741f556bb207fccaeb4cea",
+      "mini_wa_jepa/visualization/reports.py": "470a07bdf7b5a9cf1e2d34a6e88bcddcf3538980b6c4cb89fd125bd0028347b5",
+      "mini_wa_jepa/visualization/rerun_logger.py": "50e113bd7225b2dde5c0587c0306f1e2181cdb798ac9e4416daeca82d3ca39a0",
+      "mini_wa_jepa/visualization/streaming.py": "bb8b990e6fee46f12dd180c627d58895883adce5e14da5194735bb6f13ae2f76",
+      "mini_wa_jepa/visualization/__init__.py": "a7fe51c0cb84922280ca98653d059d50df337f2afc0d3e646969f71c7e0cde21",
+      "mini_wa_jepa/visualization/keyboard.py": "9fa4f63ebe541afd2736532450f4c5c7f32cf07b1e2c453d7ffc2c0841c9d78f",
+      "planning/navigation_reference.py": "f3b4671d9dbc545d7fee55eea3489a4c05650cec8d871217f31a4259c01a53b2",
+      "planning/integrated_policy.py": "d5ec6e0c3c10d9388ce72a0deb2a9c32ad2bca51cba88ed5f428489c610c62fe",
+      "planning/candidates.py": "1b7053d019264662127c7c0d19207ac723f28eab167b80479250653fa80e4ec8",
+      "planning/integrated.py": "0f5430daf38d9392725c6e605d5f385b10dc372e6f03e972b25a0100407f74d3",
+      "planning/policy7.py": "cd8ad3bd2d45f0a73da980de249d355ed4dcf888b33d7df4c940736fe08c7341",
+      "planning/__init__.py": "e6f631ab8a4c2bec64b8eda033a7b21980c1630833784b106b2bda4d1db41010",
+      "chapters/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "chapters/learning.py": "69092fe54d1bbf5035c02bd9a9817bf2d9410e956fd17cdf481c0bf34518c9dc",
+      "chapters/chapter0_hardware/app.py": "4e357912d880da9d767539fc649ace4bd95515cd28a2b8af3cb1c51d0238cf75",
+      "chapters/chapter0_hardware/ui.py": "a68821a63ae5bbd8f63592bc9aca3d14fdaa2828aa41ec5171cc9db6c8cabd2f",
+      "chapters/chapter0_hardware/__init__.py": "ea5fe2d3cb1be2e05b84e3a2fd4f4d92f4c702559a0912d1d5f137e39e6b8d72",
+      "chapters/chapter7_candidate_planning/app.py": "1e48e106d630a0313daa5f33c19e85fdcd72eb9683292bae27b1b7d545628b7d",
+      "chapters/chapter7_candidate_planning/ui.py": "b312ab4d04bf77b8c6b7a71f31c11b6e5c229d635057a7ed15407407d5864626",
+      "chapters/chapter7_candidate_planning/__init__.py": "df5242f04bd7d6886c33549178bd8713251afc05a988d1c357fc67530396a79f",
+      "chapters/chapter5_stress_testing/app.py": "6e074e654cb6ae109e3617877e2b16c6ec4ac2542be0b816d5a081d5acfc080e",
+      "chapters/chapter5_stress_testing/ui.py": "8032643913b309b03c80fe35257030211b940968df6bc8c9c6e05a4a2bfd3c23",
+      "chapters/chapter5_stress_testing/__init__.py": "ea5fe2d3cb1be2e05b84e3a2fd4f4d92f4c702559a0912d1d5f137e39e6b8d72",
+      "chapters/chapter1_bev/app.py": "5c91105f9b90a1ae5d5c2289c947b297d62e5af877ce173823c27121b75914bd",
+      "chapters/chapter1_bev/ui.py": "911202f20c734bb839e9b3dd6ed70dee8cd524350975b2f0c351c7a3a9e81fc9",
+      "chapters/chapter1_bev/__init__.py": "ea5fe2d3cb1be2e05b84e3a2fd4f4d92f4c702559a0912d1d5f137e39e6b8d72",
+      "chapters/chapter4_joint_world_action/app.py": "6bfafb0c7e019062e86933f692213bd40f253b4fa8dd824673c707c13daf562a",
+      "chapters/chapter4_joint_world_action/ui.py": "d1177defbe1b495e2032bec260f4caf62cf1edb4cb392acc99886ca71ee324db",
+      "chapters/chapter4_joint_world_action/__init__.py": "ea5fe2d3cb1be2e05b84e3a2fd4f4d92f4c702559a0912d1d5f137e39e6b8d72",
+      "chapters/chapter3_latent_vicreg/app.py": "1117456d33a06c761da95a08e6a8dc145c79352310d0c998a7c532012f9b99ae",
+      "chapters/chapter3_latent_vicreg/ui.py": "d1ccacaeae6afd8e676733de11f768ae76c95b4fa54f6283c297c6770d874170",
+      "chapters/chapter3_latent_vicreg/__init__.py": "ea5fe2d3cb1be2e05b84e3a2fd4f4d92f4c702559a0912d1d5f137e39e6b8d72",
+      "chapters/chapter6_action_conditioned/app.py": "7e4e9ca7c82d60e183de1078b3e1179f234b587ca6a951eda2bc45570bc70281",
+      "chapters/chapter6_action_conditioned/ui.py": "e463ce9c3d9f1dd05fdd503a062c1f26b31c6a07c038fc5cf7f5a1a7908dd0ba",
+      "chapters/chapter6_action_conditioned/__init__.py": "e4b4f87a358fa7c1840c81e0f72774b8cfa7b0ae4930e49a3fa76efc4b662968",
+      "chapters/chapter2_baseline/app.py": "bd8b67fc8549d2d60a5401c05507c37d2ca692131265e0adff27aa0bc1d475f7",
+      "chapters/chapter2_baseline/ui.py": "a48319056cb7e5b783af6b171959c441e4ce603077e9a073853fd2d8828d02cb",
+      "chapters/chapter2_baseline/__init__.py": "ea5fe2d3cb1be2e05b84e3a2fd4f4d92f4c702559a0912d1d5f137e39e6b8d72",
+      "chapters/chapter0_hardware/src/oom_recovery.py": "e32f3a13ff5c3e679acd111d65edf28ad14a16c8fb230980387ce4ff1d700425",
+      "chapters/chapter0_hardware/src/test_chapter0.py": "599a6dba3cc7c67220c2ccfb426491acfb5447afb9330e60b4ebacbec62cee9b",
+      "chapters/chapter0_hardware/src/__init__.py": "f734c87acfcf24ba7f3c4b94db9ac6c7c9e5bd0e43280a20e3f51afc052b2143",
+      "chapters/chapter0_hardware/src/calibration.py": "4ed38f37e6dbde2b7e05b0ce2ecd88b51bfee8851a946b6a875fd6a6ed0541eb",
+      "chapters/chapter0_hardware/src/hardware.py": "88e269089ca1fb794f28e5bdf0c71c97f5ba769c5eb40223c3f96903cdcf89a7",
+      "chapters/chapter0_hardware/src/operators.py": "5ed5c14c749692854e1b3b1b7df5d532b2bc727c657a1436bcb1ba68b60882fc",
+      "chapters/chapter5_stress_testing/src/benchmark.py": "db7ce257d584070efb87c71f45e26da02fdb38e94ef0255140d2f856bc25f0e2",
+      "chapters/chapter5_stress_testing/src/degradation.py": "161e16e5e3881f837613021f3e2bca6197bcf2a8b7c87d8e29ec38b120d741bb",
+      "chapters/chapter5_stress_testing/src/__init__.py": "ce218652c12d6ff84f4caf36d78fb55173671514764d65df957be6d8857abacc",
+      "chapters/chapter1_bev/src/semantic_bev.py": "ab5aa8d9071812a15ee272efff06f3021ccc8607549c29a9d67d28b18e6e2661",
+      "chapters/chapter1_bev/src/__init__.py": "481d16ef1185c7346dfd42e7805e0008762583622c5c2a93e45c515d0014183e",
+      "chapters/chapter4_joint_world_action/src/train.py": "eae27f0eded324f0895079d686e3573ef02816c3639276e6fcd5bc0833341339",
+      "chapters/chapter4_joint_world_action/src/dataset.py": "2f0e88746af785ca79551bf99fb15f00bd9cd4eef402bec33b42b20864dc18a0",
+      "chapters/chapter4_joint_world_action/src/config.py": "09ccdacae4128434bd3d438f7da7d1e886b903a09bd560fb2bf65ed9f4310549",
+      "chapters/chapter4_joint_world_action/src/model.py": "b6623df2ea02f35403508ba2cf61db1d1db20e55af971e0d36fd2eacc8eec0ab",
+      "chapters/chapter4_joint_world_action/src/__init__.py": "6dd3380e7ccf4d498875663459541eab375904e32a63c04e51942b21562431ac",
+      "chapters/chapter4_joint_world_action/src/loss.py": "8eb5a9ccc80a4f551be972c7d9b3c3f72a26f88c2d496313e667aec8402057c8",
+      "chapters/chapter3_latent_vicreg/src/train.py": "0fbfd98f921f43cec85315e5a40417c152df304a54b0d4a7f4b710734c0e8794",
+      "chapters/chapter3_latent_vicreg/src/dataset.py": "a19089217a503f0b105041654f171a909bab83c5a431a0f263e1773234450b92",
+      "chapters/chapter3_latent_vicreg/src/config.py": "b2e60ef54c3841165847e13e0859c081f52f42453eb1f6ee12692f79cf6c1527",
+      "chapters/chapter3_latent_vicreg/src/model.py": "9350af3df9110999dbc0e79f1b1df52a6b0e2d767572ecc555ae3d0894c995a9",
+      "chapters/chapter3_latent_vicreg/src/__init__.py": "99dce6ff18f58390b063647e86b9fc89c1211962df42ef46a3fb8080c1c7a3f1",
+      "chapters/chapter3_latent_vicreg/src/loss.py": "6dbaa2baf26ba1d48292292d63ff4d725797d6d4266d152926c536d607aa8ad4",
+      "chapters/chapter6_action_conditioned/src/lesson_data.py": "637656b133546d44798a550bb9b6a10adfe0dbab50ad9756f94f9df6768f9da9",
+      "chapters/chapter6_action_conditioned/src/__init__.py": "7f14a2959a686d0ba14c570079109de7e102d10f969555351bff65fbcce5cef4",
+      "chapters/chapter2_baseline/src/train.py": "d8cf3c54b3bf4d7ca3d307c4376b4236971635729116c602a62f1f1f7a1453f5",
+      "chapters/chapter2_baseline/src/dataset.py": "37d649131b4d90c8ce2a926c97a8f036ccd6fb08c64fd9023d1581b2c5f92cc4",
+      "chapters/chapter2_baseline/src/config.py": "1a928236a43f160ac9466d48e95a1713d9c38ce3b55e63c7f8b344a93c1531da",
+      "chapters/chapter2_baseline/src/model.py": "a1f5a987e6f6543298a31939ddbd6e3b0e14a0db5b1d554b210405507cb15fa9",
+      "chapters/chapter2_baseline/src/__init__.py": "c8f7a0625fbc63c32be9f876e83ad29e81233d73b9bb49540c559956599aec7c",
+      "tests/test_integrated_world.py": "2abdc5bbe0692a96703355695a111b61a43a3febb048e436157c6f3baccc8899",
+      "tests/test_stage7_report.py": "ac4dafe676602158d98742b2849e9ad551f6f843d887e44d9fe2329832786103",
+      "tests/test_stage7_flow.py": "7152dd0aaf3ec2adcf4cd008d9cb702b3cb67db215aa1bf7c64da0f1130a96a6",
+      "tests/test_stage1.py": "4b31e14ebed187d13f0ed893e12bc051f5b58a2175cbdc80d76f859628058bd2",
+      "tests/test_integrated_physics.py": "38bd083cf8f386c109279107225b7e7a6b6149eacdf6c9739acf25a307c5a6a4",
+      "tests/test_learning_chapters.py": "08e32e290b57f03d5de9b93e50daf0fda46041e0f10d8f5a2ad3b92c4517a882",
+      "tests/test_integrated_policy.py": "75141d3abd8e0cef6ee6da4a47cc6c66a3db277b466e5826841e7457b05e8797",
+      "tests/test_stage2_v2.py": "9b3c5b3392b9a1c1574c33ceb41de08a3084343655ca00790c54dd275ff5ecf5",
+      "tests/test_stage7_risk.py": "270beeb2d1b79cb48ee0a3eaf0ba09f5a5e90b6026582afdeaea68094228946a",
+      "tests/test_navigation_flow.py": "ff6d0344d1d54cb170c959f42b0d2c3aed9287c9485dba8b26ce722b18c0b626",
+      "tests/test_stage5.py": "7b7f45c95bef137242cde0d92235226bb823dd23daf9d5be13a510ebcd6f523b",
+      "tests/test_stage7_structured_flow.py": "a231fc74c00c019a6b4fa92ef8b4d599cca2fda3e5bc45608716ecc2d53bb334",
+      "tests/test_stage6.py": "56d0f16be43759316f536409a9484e827c4447a263cc99837df65af7eaf9ee6c",
+      "tests/test_integrated_navigation.py": "c3af18a525ed7320756e391d0ec9fd31b946b62c552c3702e65109e1cb43c191",
+      "tests/test_integrated_permissions.py": "d4a8ec11eba05ecc1303b41f3071a35106c55aa70639b2b273201400355c003a",
+      "tests/test_navigation_data.py": "2cb0b2a31ca65ff21e8a399e21439f25738a4fd154e8ff311d5731be2b757e98",
+      "tests/test_integrated_control.py": "7d208dee25b32a675d64c8ae66cb6471f3a2e459553aeab07b44fc6e811e93f9",
+      "tests/test_bev_wa_stage6.py": "4f3bdbe634860d30e9753761528dc27146e0d6fc2c074ae01a60c6c8a4402374",
+      "tests/test_stage7_planning.py": "8d372bb34408a81ea9ad3f74345bc1a1ae3c8ff1e5da9b62434acde072d8e21d",
+      "tests/test_bev_wa_joint_flow.py": "c7ef9be32f3dcedee72e8549ee05f696fa0e7ea95edad079f2ae84b4cc40be46",
+      "tests/test_stage7_metric_flow.py": "7941a3b78d939db2eb5eb109123bbe510ffa2bb7137d90ff85a7ccb4ed51fbc0",
+      "tests/test_stage7_collection.py": "6c46ae3fc63bf04c10c0a21ff815ae1e7b83ebdf12f404983ecadac0303c982b",
+      "tests/test_bev_wa_latent_flow.py": "7827ab86a83b53f0e100811cd7529ca5a9d62e7f42c2004eeee870e40be8ed1f",
+      "tests/test_bev_wa_stage7.py": "c1db200c2b9de885f862395efc1a710e4afaa5ea760772e6c74f7b4dc1277c84",
+      "tests/test_navigation_encoder.py": "59c238adfc4aac35cfff5e79f98411f7f67b0874b30d3d06c49209d1447fbda2",
+      "tests/test_navigation_reference.py": "5f26ea1ac8b4469a156706830f785137a76134fc87e54dc684cb4a993a06fba6",
+      "tests/test_stage3.py": "fbef6c00b7658307611b5166ba0aecc682e7e6613bf506b69d532b6173f794aa",
+      "tests/test_visualization.py": "19af2c5a7749a574e8f762e2f1220e2a17025803cac9519f80fc6ac26f72499c",
+      "tests/test_bev_wa_dataset.py": "57c062e3820363a71372e912e2763b10fb5dbbfa2eadee51340b475ed22e2f3e",
+      "tests/test_traffic_teacher.py": "2c0354d8391a89aab365af338f40c0a08fd0fa0a155e95cc5c92ef4c20fb2cc9",
+      "tests/test_stage2.py": "6977e4a0532a399ac604fd7593c3dcbe006f24b72e1ee1f77f834ba3dd65f8e3",
+      "tests/test_semantic_bev.py": "ba69131b508843103b3410c6d6dc80431dfc564f5cc44c18ec9ffd10ff27c483",
+      "tests/test_hardware_infrastructure.py": "10d8f209274dde83a98795fda86eb752f2fc38d43381966a752fdc7ccbb542ec",
+      "tests/test_stage4_evaluation.py": "8a69724cd594e4cd651e468f22b1bc04782b66a33095ac2fa4805ea9c1616910",
+      "tests/test_stage4.py": "316729aa4bd402d038c39b8cd855e8cc45872e65338f6071aed6b432ef333c1d",
+      "tests/test_chapter6_learning.py": "001cf89a1036931695a0ed441464a5add6af8984633b4fbabf23da82af4ea47d",
+      "tests/test_navigation_head.py": "b447f86790923813008b43e64efe69c60e98686235226b03d2e67fc0c218eec2",
+      "tests/test_chapter7_learning.py": "15c77fb0b03337f8fcbed5017b38bb464d6ca04a9da610aec98cd4b8a19a2551",
+      "app.py": "b03fe36799e52d0887d5fff993b27d6cdb91f2c62dccbf386c1afe699816a105"
+    },
+    "config": null
+  },
+  "arms": {
+    "arm_d_seed_20261022": {
+      "total_episodes": 24,
+      "overall_arrival_rate": 0.4583,
+      "overall_mean_rc": 0.5642,
+      "overall_crash_rate": 0.3333,
+      "overall_offroad_rate": 0.2083,
+      "mean_latency_p95_ms": 20.47,
+      "ordinary_navigation": {
+        "arrival_rate": 0.5833,
+        "mean_route_completion": 0.7098
+      },
+      "traffic_maneuvers": {
+        "traffic_crash_rate": 0.4167,
+        "overtake_success_rate": 0.0
+      },
+      "episodes": [
+        {
+          "seed": 4300000,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 181,
+          "route_completion": 0.9625,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.51,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 21.2,
+            "mean_tracker_ms": 0.08
+          }
+        },
+        {
+          "seed": 4300001,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 645,
+          "route_completion": 0.9898,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.28,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.48,
+            "mean_model_euler_ms": 18.57,
+            "mean_tracker_ms": 0.08
+          }
+        },
+        {
+          "seed": 4300002,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": false,
+          "crashed": false,
+          "offroad": true,
+          "steps": 209,
+          "route_completion": 0.3961,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.81,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.49,
+            "mean_model_euler_ms": 18.89,
+            "mean_tracker_ms": 0.08
+          }
+        },
+        {
+          "seed": 4300003,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 423,
+          "route_completion": 0.9837,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.85,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.47,
+            "mean_model_euler_ms": 18.52,
+            "mean_tracker_ms": 0.08
+          }
+        },
+        {
+          "seed": 4300004,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 369,
+          "route_completion": 0.9828,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.36,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.47,
+            "mean_model_euler_ms": 18.46,
+            "mean_tracker_ms": 0.08
+          }
+        },
+        {
+          "seed": 4300005,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 649,
+          "route_completion": 0.9898,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.81,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.47,
+            "mean_model_euler_ms": 18.79,
+            "mean_tracker_ms": 0.08
+          }
+        },
+        {
+          "seed": 4300006,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 154,
+          "route_completion": 0.9581,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.65,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 18.7,
+            "mean_tracker_ms": 0.08
+          }
+        },
+        {
+          "seed": 4300007,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 156,
+          "route_completion": 0.2255,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.81,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.49,
+            "mean_model_euler_ms": 18.63,
+            "mean_tracker_ms": 0.08
+          }
+        },
+        {
+          "seed": 4300008,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": false,
+          "crashed": false,
+          "offroad": true,
+          "steps": 104,
+          "route_completion": 0.2556,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 18.81,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.48,
+            "mean_model_euler_ms": 17.85,
+            "mean_tracker_ms": 0.08
+          }
+        },
+        {
+          "seed": 4300009,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 191,
+          "route_completion": 0.4401,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 19.43,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.45,
+            "mean_model_euler_ms": 17.93,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300010,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 390,
+          "route_completion": 0.9805,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 19.51,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 17.98,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300011,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 228,
+          "route_completion": 0.3527,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 21.07,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.49,
+            "mean_model_euler_ms": 19.06,
+            "mean_tracker_ms": 0.08
+          }
+        },
+        {
+          "seed": 4300300,
+          "case": "allowed_left",
+          "is_controlled": true,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 440,
+          "route_completion": 0.9834,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.24,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.66,
+            "mean_model_euler_ms": 18.38,
+            "mean_tracker_ms": 0.08
+          }
+        },
+        {
+          "seed": 4300301,
+          "case": "allowed_right",
+          "is_controlled": true,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 468,
+          "route_completion": 0.9839,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.26,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.47,
+            "mean_model_euler_ms": 18.4,
+            "mean_tracker_ms": 0.08
+          }
+        },
+        {
+          "seed": 4300302,
+          "case": "blocked",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 87,
+          "route_completion": 0.115,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.7,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.48,
+            "mean_model_euler_ms": 18.78,
+            "mean_tracker_ms": 0.08
+          }
+        },
+        {
+          "seed": 4300303,
+          "case": "no_adjacent_lane",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": false,
+          "offroad": true,
+          "steps": 101,
+          "route_completion": 0.0833,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 21.36,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.47,
+            "mean_model_euler_ms": 18.81,
+            "mean_tracker_ms": 0.08
+          }
+        },
+        {
+          "seed": 4300304,
+          "case": "allowed_left",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 81,
+          "route_completion": 0.1376,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.36,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 18.52,
+            "mean_tracker_ms": 0.08
+          }
+        },
+        {
+          "seed": 4300305,
+          "case": "allowed_right",
+          "is_controlled": true,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 458,
+          "route_completion": 0.9832,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.72,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.47,
+            "mean_model_euler_ms": 18.71,
+            "mean_tracker_ms": 0.08
+          }
+        },
+        {
+          "seed": 4300306,
+          "case": "blocked",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 193,
+          "route_completion": 0.1941,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.52,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.47,
+            "mean_model_euler_ms": 18.63,
+            "mean_tracker_ms": 0.08
+          }
+        },
+        {
+          "seed": 4300307,
+          "case": "no_adjacent_lane",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": false,
+          "offroad": true,
+          "steps": 88,
+          "route_completion": 0.0804,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.7,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.47,
+            "mean_model_euler_ms": 18.8,
+            "mean_tracker_ms": 0.08
+          }
+        },
+        {
+          "seed": 4300308,
+          "case": "allowed_left",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 81,
+          "route_completion": 0.1443,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 21.09,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.52,
+            "mean_model_euler_ms": 18.88,
+            "mean_tracker_ms": 0.08
+          }
+        },
+        {
+          "seed": 4300309,
+          "case": "allowed_right",
+          "is_controlled": true,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 456,
+          "route_completion": 0.9835,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.53,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 18.7,
+            "mean_tracker_ms": 0.08
+          }
+        },
+        {
+          "seed": 4300310,
+          "case": "blocked",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 226,
+          "route_completion": 0.2257,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 21.45,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 18.78,
+            "mean_tracker_ms": 0.08
+          }
+        },
+        {
+          "seed": 4300311,
+          "case": "no_adjacent_lane",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": false,
+          "offroad": true,
+          "steps": 116,
+          "route_completion": 0.1092,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 19.34,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.45,
+            "mean_model_euler_ms": 17.97,
+            "mean_tracker_ms": 0.08
+          }
+        }
+      ]
+    },
+    "arm_d_seed_20261023": {
+      "total_episodes": 24,
+      "overall_arrival_rate": 0.5417,
+      "overall_mean_rc": 0.6551,
+      "overall_crash_rate": 0.25,
+      "overall_offroad_rate": 0.1667,
+      "mean_latency_p95_ms": 20.64,
+      "ordinary_navigation": {
+        "arrival_rate": 0.6667,
+        "mean_route_completion": 0.7643
+      },
+      "traffic_maneuvers": {
+        "traffic_crash_rate": 0.25,
+        "overtake_success_rate": 0.0
+      },
+      "episodes": [
+        {
+          "seed": 4300000,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 182,
+          "route_completion": 0.9618,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.09,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.45,
+            "mean_model_euler_ms": 17.98,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300001,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 651,
+          "route_completion": 0.9891,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.84,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.47,
+            "mean_model_euler_ms": 18.28,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300002,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 483,
+          "route_completion": 0.9893,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.62,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.48,
+            "mean_model_euler_ms": 18.31,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300003,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 425,
+          "route_completion": 0.9846,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 19.95,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.45,
+            "mean_model_euler_ms": 18.08,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300004,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 371,
+          "route_completion": 0.9842,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.1,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.47,
+            "mean_model_euler_ms": 18.13,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300005,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 667,
+          "route_completion": 0.9896,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.51,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 18.27,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300006,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 159,
+          "route_completion": 0.9578,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.18,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.44,
+            "mean_model_euler_ms": 18.2,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300007,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 158,
+          "route_completion": 0.2281,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.38,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.47,
+            "mean_model_euler_ms": 18.18,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300008,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": false,
+          "crashed": false,
+          "offroad": true,
+          "steps": 104,
+          "route_completion": 0.2886,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 19.38,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.47,
+            "mean_model_euler_ms": 17.89,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300009,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 196,
+          "route_completion": 0.4417,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.83,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.44,
+            "mean_model_euler_ms": 18.24,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300010,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 424,
+          "route_completion": 0.9818,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 21.22,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 18.49,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300011,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 319,
+          "route_completion": 0.3753,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.82,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 18.39,
+            "mean_tracker_ms": 0.08
+          }
+        },
+        {
+          "seed": 4300300,
+          "case": "allowed_left",
+          "is_controlled": true,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 458,
+          "route_completion": 0.9849,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.48,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 18.25,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300301,
+          "case": "allowed_right",
+          "is_controlled": true,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 469,
+          "route_completion": 0.9838,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 21.11,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 18.62,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300302,
+          "case": "blocked",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 109,
+          "route_completion": 0.127,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.81,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.47,
+            "mean_model_euler_ms": 18.44,
+            "mean_tracker_ms": 0.08
+          }
+        },
+        {
+          "seed": 4300303,
+          "case": "no_adjacent_lane",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": false,
+          "offroad": true,
+          "steps": 136,
+          "route_completion": 0.1001,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 21.18,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 18.18,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300304,
+          "case": "allowed_left",
+          "is_controlled": true,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 452,
+          "route_completion": 0.9844,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.39,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.45,
+            "mean_model_euler_ms": 18.24,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300305,
+          "case": "allowed_right",
+          "is_controlled": true,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 459,
+          "route_completion": 0.9829,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 21.39,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 18.98,
+            "mean_tracker_ms": 0.08
+          }
+        },
+        {
+          "seed": 4300306,
+          "case": "blocked",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": false,
+          "offroad": false,
+          "steps": 600,
+          "route_completion": 0.7717,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.17,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 18.17,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300307,
+          "case": "no_adjacent_lane",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": false,
+          "offroad": true,
+          "steps": 178,
+          "route_completion": 0.1375,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.35,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 18.29,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300308,
+          "case": "allowed_left",
+          "is_controlled": true,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 450,
+          "route_completion": 0.9839,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.36,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.45,
+            "mean_model_euler_ms": 18.15,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300309,
+          "case": "allowed_right",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 101,
+          "route_completion": 0.1675,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 21.39,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.45,
+            "mean_model_euler_ms": 18.53,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300310,
+          "case": "blocked",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 128,
+          "route_completion": 0.1637,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 21.33,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 18.64,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300311,
+          "case": "no_adjacent_lane",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": false,
+          "offroad": true,
+          "steps": 196,
+          "route_completion": 0.1624,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 21.57,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 18.59,
+            "mean_tracker_ms": 0.07
+          }
+        }
+      ]
+    },
+    "arm_b_seed_20261022": {
+      "total_episodes": 24,
+      "overall_arrival_rate": 0.5,
+      "overall_mean_rc": 0.622,
+      "overall_crash_rate": 0.2917,
+      "overall_offroad_rate": 0.2083,
+      "mean_latency_p95_ms": 19.91,
+      "ordinary_navigation": {
+        "arrival_rate": 0.5833,
+        "mean_route_completion": 0.7317
+      },
+      "traffic_maneuvers": {
+        "traffic_crash_rate": 0.3333,
+        "overtake_success_rate": 0.0
+      },
+      "episodes": [
+        {
+          "seed": 4300000,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 179,
+          "route_completion": 0.9621,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 18.72,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.45,
+            "mean_model_euler_ms": 17.23,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300001,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 650,
+          "route_completion": 0.9899,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.23,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.47,
+            "mean_model_euler_ms": 17.71,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300002,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": false,
+          "crashed": false,
+          "offroad": true,
+          "steps": 284,
+          "route_completion": 0.3813,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 19.77,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.48,
+            "mean_model_euler_ms": 17.83,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300003,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 418,
+          "route_completion": 0.9846,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.43,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 18.17,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300004,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 363,
+          "route_completion": 0.983,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 18.92,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 17.36,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300005,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 653,
+          "route_completion": 0.9901,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.42,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.47,
+            "mean_model_euler_ms": 17.99,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300006,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 155,
+          "route_completion": 0.9576,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.22,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.44,
+            "mean_model_euler_ms": 17.73,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300007,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 226,
+          "route_completion": 0.3057,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 19.66,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.48,
+            "mean_model_euler_ms": 17.53,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300008,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": false,
+          "crashed": false,
+          "offroad": true,
+          "steps": 108,
+          "route_completion": 0.2787,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 18.68,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.48,
+            "mean_model_euler_ms": 17.18,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300009,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 313,
+          "route_completion": 0.5896,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 19.87,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.45,
+            "mean_model_euler_ms": 17.75,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300010,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 429,
+          "route_completion": 0.9819,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.15,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 17.73,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300011,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 316,
+          "route_completion": 0.3754,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.0,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 17.62,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300300,
+          "case": "allowed_left",
+          "is_controlled": true,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 450,
+          "route_completion": 0.9836,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.63,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 17.86,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300301,
+          "case": "allowed_right",
+          "is_controlled": true,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 458,
+          "route_completion": 0.9847,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.34,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 17.96,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300302,
+          "case": "blocked",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 260,
+          "route_completion": 0.2279,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.56,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.47,
+            "mean_model_euler_ms": 17.99,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300303,
+          "case": "no_adjacent_lane",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": false,
+          "offroad": true,
+          "steps": 154,
+          "route_completion": 0.1218,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 19.58,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.47,
+            "mean_model_euler_ms": 17.79,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300304,
+          "case": "allowed_left",
+          "is_controlled": true,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 441,
+          "route_completion": 0.9834,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 19.53,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.44,
+            "mean_model_euler_ms": 17.47,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300305,
+          "case": "allowed_right",
+          "is_controlled": true,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 450,
+          "route_completion": 0.983,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 19.92,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 17.72,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300306,
+          "case": "blocked",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 303,
+          "route_completion": 0.2639,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.09,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 18.05,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300307,
+          "case": "no_adjacent_lane",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": false,
+          "offroad": true,
+          "steps": 140,
+          "route_completion": 0.1174,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 19.72,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.47,
+            "mean_model_euler_ms": 17.81,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300308,
+          "case": "allowed_left",
+          "is_controlled": true,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 442,
+          "route_completion": 0.9834,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.44,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.45,
+            "mean_model_euler_ms": 17.79,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300309,
+          "case": "allowed_right",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 94,
+          "route_completion": 0.1623,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 19.76,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.48,
+            "mean_model_euler_ms": 17.97,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300310,
+          "case": "blocked",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 238,
+          "route_completion": 0.2337,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.04,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.47,
+            "mean_model_euler_ms": 17.8,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300311,
+          "case": "no_adjacent_lane",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": false,
+          "offroad": true,
+          "steps": 108,
+          "route_completion": 0.1036,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.19,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 17.81,
+            "mean_tracker_ms": 0.07
+          }
+        }
+      ]
+    },
+    "arm_a_seed_20261022": {
+      "total_episodes": 24,
+      "overall_arrival_rate": 0.2917,
+      "overall_mean_rc": 0.4537,
+      "overall_crash_rate": 0.2917,
+      "overall_offroad_rate": 0.0417,
+      "mean_latency_p95_ms": 3.48,
+      "ordinary_navigation": {
+        "arrival_rate": 0.5833,
+        "mean_route_completion": 0.7492
+      },
+      "traffic_maneuvers": {
+        "traffic_crash_rate": 0.4167,
+        "overtake_success_rate": 0.0
+      },
+      "episodes": [
+        {
+          "seed": 4300000,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 182,
+          "route_completion": 0.9626,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 3.23,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.45,
+            "mean_model_euler_ms": 2.85,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300001,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 667,
+          "route_completion": 0.9899,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 3.61,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.48,
+            "mean_model_euler_ms": 2.86,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300002,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": false,
+          "crashed": false,
+          "offroad": false,
+          "steps": 800,
+          "route_completion": 0.1184,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 725,
+          "latency_p95_ms": 3.51,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.47,
+            "mean_model_euler_ms": 2.59,
+            "mean_tracker_ms": 0.06
+          }
+        },
+        {
+          "seed": 4300003,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 458,
+          "route_completion": 0.9844,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 3.52,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.45,
+            "mean_model_euler_ms": 2.81,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300004,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 446,
+          "route_completion": 0.9829,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 3.53,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 2.71,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300005,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 708,
+          "route_completion": 0.9894,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 3.53,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.47,
+            "mean_model_euler_ms": 2.88,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300006,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 202,
+          "route_completion": 0.9518,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 3.54,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.45,
+            "mean_model_euler_ms": 2.78,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300007,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 356,
+          "route_completion": 0.3757,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 10,
+          "latency_p95_ms": 3.65,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.5,
+            "mean_model_euler_ms": 2.92,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300008,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": false,
+          "crashed": false,
+          "offroad": true,
+          "steps": 144,
+          "route_completion": 0.2017,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 22,
+          "latency_p95_ms": 3.55,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.48,
+            "mean_model_euler_ms": 2.89,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300009,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": false,
+          "crashed": false,
+          "offroad": false,
+          "steps": 800,
+          "route_completion": 0.9761,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 131,
+          "latency_p95_ms": 3.54,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 2.86,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300010,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 516,
+          "route_completion": 0.9817,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 50,
+          "latency_p95_ms": 3.56,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.47,
+            "mean_model_euler_ms": 2.77,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300011,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 694,
+          "route_completion": 0.476,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 116,
+          "latency_p95_ms": 3.62,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.47,
+            "mean_model_euler_ms": 2.92,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300300,
+          "case": "allowed_left",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 375,
+          "route_completion": 0.3013,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 40,
+          "latency_p95_ms": 3.45,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 2.55,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300301,
+          "case": "allowed_right",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": false,
+          "offroad": false,
+          "steps": 600,
+          "route_completion": 0.0371,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 428,
+          "latency_p95_ms": 3.47,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.45,
+            "mean_model_euler_ms": 2.61,
+            "mean_tracker_ms": 0.06
+          }
+        },
+        {
+          "seed": 4300302,
+          "case": "blocked",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 363,
+          "route_completion": 0.2953,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 61,
+          "latency_p95_ms": 3.46,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.45,
+            "mean_model_euler_ms": 2.68,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300303,
+          "case": "no_adjacent_lane",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": false,
+          "offroad": false,
+          "steps": 600,
+          "route_completion": 0.0227,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 557,
+          "latency_p95_ms": 3.33,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.45,
+            "mean_model_euler_ms": 2.52,
+            "mean_tracker_ms": 0.06
+          }
+        },
+        {
+          "seed": 4300304,
+          "case": "allowed_left",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 320,
+          "route_completion": 0.2931,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 54,
+          "latency_p95_ms": 3.26,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.45,
+            "mean_model_euler_ms": 2.49,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300305,
+          "case": "allowed_right",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": false,
+          "offroad": false,
+          "steps": 600,
+          "route_completion": 0.0391,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 471,
+          "latency_p95_ms": 3.45,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.45,
+            "mean_model_euler_ms": 2.59,
+            "mean_tracker_ms": 0.06
+          }
+        },
+        {
+          "seed": 4300306,
+          "case": "blocked",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": false,
+          "offroad": false,
+          "steps": 600,
+          "route_completion": 0.0245,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 569,
+          "latency_p95_ms": 3.49,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 2.6,
+            "mean_tracker_ms": 0.06
+          }
+        },
+        {
+          "seed": 4300307,
+          "case": "no_adjacent_lane",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": false,
+          "offroad": false,
+          "steps": 600,
+          "route_completion": 0.0244,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 577,
+          "latency_p95_ms": 3.51,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.45,
+            "mean_model_euler_ms": 2.6,
+            "mean_tracker_ms": 0.06
+          }
+        },
+        {
+          "seed": 4300308,
+          "case": "allowed_left",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 466,
+          "route_completion": 0.4043,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 40,
+          "latency_p95_ms": 3.43,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.45,
+            "mean_model_euler_ms": 2.52,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300309,
+          "case": "allowed_right",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 475,
+          "route_completion": 0.3949,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 46,
+          "latency_p95_ms": 3.38,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.45,
+            "mean_model_euler_ms": 2.54,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300310,
+          "case": "blocked",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": false,
+          "offroad": false,
+          "steps": 600,
+          "route_completion": 0.0299,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 578,
+          "latency_p95_ms": 3.41,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.44,
+            "mean_model_euler_ms": 2.56,
+            "mean_tracker_ms": 0.06
+          }
+        },
+        {
+          "seed": 4300311,
+          "case": "no_adjacent_lane",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": false,
+          "offroad": false,
+          "steps": 600,
+          "route_completion": 0.0311,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 576,
+          "latency_p95_ms": 3.37,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.44,
+            "mean_model_euler_ms": 2.52,
+            "mean_tracker_ms": 0.06
+          }
+        }
+      ]
+    },
+    "ablation_d0_seed_20261022": {
+      "total_episodes": 24,
+      "overall_arrival_rate": 0.25,
+      "overall_mean_rc": 0.4667,
+      "overall_crash_rate": 0.25,
+      "overall_offroad_rate": 0.375,
+      "mean_latency_p95_ms": 20.72,
+      "ordinary_navigation": {
+        "arrival_rate": 0.5,
+        "mean_route_completion": 0.7221
+      },
+      "traffic_maneuvers": {
+        "traffic_crash_rate": 0.5,
+        "overtake_success_rate": 0.0
+      },
+      "episodes": [
+        {
+          "seed": 4300000,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 292,
+          "route_completion": 0.9614,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.99,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.45,
+            "mean_model_euler_ms": 18.51,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300001,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": false,
+          "crashed": false,
+          "offroad": false,
+          "steps": 800,
+          "route_completion": 0.7711,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.45,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.48,
+            "mean_model_euler_ms": 18.21,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300002,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": false,
+          "crashed": false,
+          "offroad": true,
+          "steps": 147,
+          "route_completion": 0.1412,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.6,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.48,
+            "mean_model_euler_ms": 18.32,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300003,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 716,
+          "route_completion": 0.9844,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.29,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.45,
+            "mean_model_euler_ms": 18.02,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300004,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 609,
+          "route_completion": 0.983,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.51,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.47,
+            "mean_model_euler_ms": 18.21,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300005,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": false,
+          "crashed": false,
+          "offroad": false,
+          "steps": 800,
+          "route_completion": 0.7434,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.38,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 18.14,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300006,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 231,
+          "route_completion": 0.9517,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.82,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.45,
+            "mean_model_euler_ms": 18.16,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300007,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": false,
+          "crashed": false,
+          "offroad": true,
+          "steps": 691,
+          "route_completion": 0.4604,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 22.25,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.49,
+            "mean_model_euler_ms": 19.12,
+            "mean_tracker_ms": 0.08
+          }
+        },
+        {
+          "seed": 4300008,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": false,
+          "crashed": false,
+          "offroad": true,
+          "steps": 131,
+          "route_completion": 0.1984,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 19.45,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.48,
+            "mean_model_euler_ms": 18.0,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300009,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 793,
+          "route_completion": 0.9828,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.65,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.45,
+            "mean_model_euler_ms": 18.34,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300010,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": true,
+          "crashed": false,
+          "offroad": false,
+          "steps": 562,
+          "route_completion": 0.9819,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.55,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 18.31,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300011,
+          "case": "ordinary_navigation",
+          "is_controlled": false,
+          "arrived": false,
+          "crashed": false,
+          "offroad": false,
+          "steps": 800,
+          "route_completion": 0.5055,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 21.86,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.47,
+            "mean_model_euler_ms": 18.62,
+            "mean_tracker_ms": 0.08
+          }
+        },
+        {
+          "seed": 4300300,
+          "case": "allowed_left",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": false,
+          "offroad": true,
+          "steps": 386,
+          "route_completion": 0.4949,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.8,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 18.37,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300301,
+          "case": "allowed_right",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 136,
+          "route_completion": 0.155,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 19.76,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 18.2,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300302,
+          "case": "blocked",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 150,
+          "route_completion": 0.1519,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.89,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.47,
+            "mean_model_euler_ms": 18.62,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300303,
+          "case": "no_adjacent_lane",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": false,
+          "offroad": true,
+          "steps": 77,
+          "route_completion": 0.0503,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 21.31,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 18.84,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300304,
+          "case": "allowed_left",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": false,
+          "offroad": true,
+          "steps": 191,
+          "route_completion": 0.2452,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 21.49,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 18.84,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300305,
+          "case": "allowed_right",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 140,
+          "route_completion": 0.17,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 19.66,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 18.02,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300306,
+          "case": "blocked",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 207,
+          "route_completion": 0.203,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 21.07,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 18.59,
+            "mean_tracker_ms": 0.08
+          }
+        },
+        {
+          "seed": 4300307,
+          "case": "no_adjacent_lane",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": false,
+          "offroad": true,
+          "steps": 69,
+          "route_completion": 0.0507,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.16,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 18.1,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300308,
+          "case": "allowed_left",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": false,
+          "offroad": true,
+          "steps": 390,
+          "route_completion": 0.4922,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.05,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 18.19,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300309,
+          "case": "allowed_right",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 242,
+          "route_completion": 0.2448,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.92,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.45,
+            "mean_model_euler_ms": 18.44,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300310,
+          "case": "blocked",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": true,
+          "offroad": false,
+          "steps": 214,
+          "route_completion": 0.2184,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 20.88,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.46,
+            "mean_model_euler_ms": 18.48,
+            "mean_tracker_ms": 0.07
+          }
+        },
+        {
+          "seed": 4300311,
+          "case": "no_adjacent_lane",
+          "is_controlled": true,
+          "arrived": false,
+          "crashed": false,
+          "offroad": true,
+          "steps": 70,
+          "route_completion": 0.0603,
+          "overtake_vehicle_num": 0,
+          "stagnation_steps": 1,
+          "latency_p95_ms": 21.41,
+          "t_breakdowns": {
+            "mean_bev_preprocess_ms": 0.47,
+            "mean_model_euler_ms": 18.92,
+            "mean_tracker_ms": 0.08
+          }
+        }
+      ]
+    }
+  },
+  "regression_probes": {
+    "probe1_destination_non_deadlock": {
+      "passed": true,
+      "arrived": true,
+      "steps_to_arrival": 182,
+      "final_route_completion": 0.9619
+    },
+    "probe2_curved_braking_resume": {
+      "passed": true,
+      "entry_speed_m_s": 6.09,
+      "stopped_speed_m_s": 0.0024,
+      "resumed_speed_m_s": 6.09,
+      "crashed_or_offroad": false
+    },
+    "probe3_off_path_recovery": {
+      "passed": true,
+      "steps_to_recovery": null,
+      "final_lateral_offset_m": 0.374
+    }
+  },
+  "comparative_analysis": {
+    "arm_d_mean_rc": 0.5642,
+    "arm_b_mean_rc": 0.622,
+    "arm_a_mean_rc": 0.4537,
+    "ablation_d0_mean_rc": 0.4667,
+    "delta_rc_vs_arm_b": -0.0578,
+    "delta_rc_vs_d0": 0.0975,
+    "p_val_vs_b": 0.35418030506999043,
+    "p_val_vs_d0": 0.1684828579115144,
+    "world_gain_statistically_significant": false
+  }
+}

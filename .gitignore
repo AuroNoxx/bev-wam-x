@@ -98,3 +98,17 @@ artifacts/stage1/desktop/
 *.mp4
 *.avi
 *.mov
+
+# Local shared-disk runtime and large historical archives
+/.venv
+/artifacts/
+/archive/**/artifacts/
+*.tar.zst
+*.zst
+*.jsonl
+*.h5
+*.hdf5
+*.parquet
+*.arrow
+*.sqlite
+*.db

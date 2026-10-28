@@ -1,0 +1,138 @@
+{
+  "audit_date": "2026-10-27",
+  "method": "Byte-preserving copies of existing evidence, not new training or evaluation. Historical paths and claims remain unchanged. Interpretation is in V1.md/V2.md.",
+  "files": [
+    {
+      "file": "docs/evidence/v1/stage3_acceptance.json",
+      "source": "git:58fedae458021bb37212442868288f95947288a8:artifacts/restart_stage3/acceptance.json",
+      "sha256": "05ace85d4eff2467da8ae63e4d0dc00fe52e2807e465f4f0f5a259f2638dc29d",
+      "bytes": 37295
+    },
+    {
+      "file": "docs/evidence/v1/stage3_REPORT.md",
+      "source": "git:58fedae458021bb37212442868288f95947288a8:artifacts/restart_stage3/REPORT.md",
+      "sha256": "4f1fcbe4b95afeb99688153c24a2196bd2f8747cb3b156a47a1a6cb52e5f6cc3",
+      "bytes": 4933
+    },
+    {
+      "file": "docs/evidence/v1/stage4_acceptance.json",
+      "source": "git:58fedae458021bb37212442868288f95947288a8:artifacts/restart_stage4/acceptance.json",
+      "sha256": "c612f646ed22956a708d5cf8789bd82ce495da00338a9f5b814d680c799e34f0",
+      "bytes": 2985
+    },
+    {
+      "file": "docs/evidence/v1/stage4_REPORT.md",
+      "source": "git:58fedae458021bb37212442868288f95947288a8:artifacts/restart_stage4/REPORT.md",
+      "sha256": "5a1970151b07c8f98c6718f8f251ec520454229f12e1531d54121dbdf185f200",
+      "bytes": 5674
+    },
+    {
+      "file": "docs/evidence/v1/stage5_acceptance.json",
+      "source": "git:58fedae458021bb37212442868288f95947288a8:artifacts/restart_stage5/acceptance.json",
+      "sha256": "c1ec94c0fde2e27f0400d1b765da3bf52ef470d1b0cbc88b835f0450939df855",
+      "bytes": 377
+    },
+    {
+      "file": "docs/evidence/v1/stage5_REPORT.md",
+      "source": "git:58fedae458021bb37212442868288f95947288a8:artifacts/restart_stage5/REPORT.md",
+      "sha256": "455ceff6ec7203031ac838834aac2540e37b607913b4145feb44600b3fb96ebb",
+      "bytes": 6185
+    },
+    {
+      "file": "docs/evidence/v1/stage6_acceptance.json",
+      "source": "git:58fedae458021bb37212442868288f95947288a8:artifacts/restart_stage6/acceptance.json",
+      "sha256": "5183aff8ce6e2666069306d96907ad591e425021d0dba6ab0e0c161988ceb83c",
+      "bytes": 13869
+    },
+    {
+      "file": "docs/evidence/v1/stage6_REPORT.md",
+      "source": "git:58fedae458021bb37212442868288f95947288a8:artifacts/restart_stage6/REPORT.md",
+      "sha256": "264be6311522c4ceeee6f4227a8964be16c2723e5e63a7755bd2f274942e0a60",
+      "bytes": 3487
+    },
+    {
+      "file": "docs/evidence/v1/stage7_acceptance.json",
+      "source": "git:58fedae458021bb37212442868288f95947288a8:artifacts/restart_stage7/acceptance.json",
+      "sha256": "69fcfd02994473bb7a1b6666bd79ec412e2a1e994e638550b3dfb0eb6b40f95c",
+      "bytes": 87006
+    },
+    {
+      "file": "docs/evidence/v1/stage7_REPORT.md",
+      "source": "git:58fedae458021bb37212442868288f95947288a8:artifacts/restart_stage7/REPORT.md",
+      "sha256": "8fdd4730d56f7e3926aca3b985f3f264487b357afe8d6cfdaa21f125348a4bbc",
+      "bytes": 8176
+    },
+    {
+      "file": "docs/evidence/v2/stage1_results.json",
+      "source": "artifacts/bev_wa_alignment/stage1_001/results.json",
+      "sha256": "1f2149c53c519952df0fc40cc95e4d9cf4d1d17a0c8532a1cbb0c42dd3f075c1",
+      "bytes": 2181
+    },
+    {
+      "file": "docs/evidence/v2/stage2_results.json",
+      "source": "artifacts/bev_wa_alignment/stage2_001/results.json",
+      "sha256": "51ce20486fd10f27e7f4ed9e6a609d35d73435d0b603580368737a5f12ac5fc8",
+      "bytes": 8565
+    },
+    {
+      "file": "docs/evidence/v2/stage3_masked_results.json",
+      "source": "artifacts/bev_wa_alignment/stage3_masked_001/results.json",
+      "sha256": "5e9e66e0850f35f30c723b15f70e10636a896689fa5483cd651bb2c98d871e01",
+      "bytes": 100414
+    },
+    {
+      "file": "docs/evidence/v2/stage3_masked_REPORT.md",
+      "source": "artifacts/bev_wa_alignment/stage3_masked_001/REPORT_STAGE3.md",
+      "sha256": "67744f81e8da5a6670f9dc6f463ad48ec10966d790e108c2645441064587620a",
+      "bytes": 10935
+    },
+    {
+      "file": "docs/evidence/v2/stage4_open_loop_results.json",
+      "source": "artifacts/bev_wa_alignment/stage4_repair_execution_001/open_loop/results.json",
+      "sha256": "be17a503972a0f4f5df33ebe414ef69397c83950df8a516d11450f3b4109c94a",
+      "bytes": 56014
+    },
+    {
+      "file": "docs/evidence/v2/stage4_open_loop_REPORT.md",
+      "source": "artifacts/bev_wa_alignment/stage4_repair_execution_001/open_loop/REPORT.md",
+      "sha256": "1185b3b8f50484ab2760f3c3e83fa381a844e8e2c668ef9a0c0c25e30a0f77af",
+      "bytes": 1580
+    },
+    {
+      "file": "docs/evidence/v2/stage4_D22_six_S_report.json",
+      "source": "artifacts/bev_wa_alignment/stage4_repair_execution_001/closed_loop/D22_six_S_dt01/report.json",
+      "sha256": "b515bce6ec00a4e7bd7c19d0daf77df789ac57cfcaf3d3d6f23298de596a350e",
+      "bytes": 44428
+    },
+    {
+      "file": "docs/evidence/v2/stage4_D22_four_report.json",
+      "source": "artifacts/bev_wa_alignment/stage4_repair_execution_001/closed_loop/D22_four_dt01/report.json",
+      "sha256": "47227d2f412706c69e972fa320b23c5b8073400af52faf5d013f12c5a89b7d6f",
+      "bytes": 42501
+    },
+    {
+      "file": "docs/evidence/v2/stage5_results.json",
+      "source": "artifacts/bev_wa_alignment/stage5_001/results.json",
+      "sha256": "39bbfa2a56197a542d7b5312d3267a5e2dce59292d8bb17358d16254a910b9d7",
+      "bytes": 23590
+    },
+    {
+      "file": "docs/evidence/v2/stage6_results.json",
+      "source": "artifacts/bev_wa_alignment/stage6_001/results.json",
+      "sha256": "eae6ef1310b42bba9187a88879e4267be627f4894e5782d0a2ce620d62487100",
+      "bytes": 39257
+    },
+    {
+      "file": "docs/evidence/v2/stage7_results.json",
+      "source": "artifacts/bev_wa_alignment/stage7_001/results.json",
+      "sha256": "bd2d672186c7061f17b5cbfab5390891425f8a2bb2bb0d21152fa19f1a78d7e2",
+      "bytes": 100623
+    },
+    {
+      "file": "docs/evidence/v2/stage7_REPORT_with_correction.md",
+      "source": "artifacts/bev_wa_alignment/stage7_001/REPORT_STAGE7.md",
+      "sha256": "e6ccb7a9205f2f7121af0bae0737718e129e5dcfa667fb92573abe6df6a75344",
+      "bytes": 8811
+    }
+  ]
+}

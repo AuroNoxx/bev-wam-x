@@ -124,7 +124,10 @@ def collect_risk_data(output_dir, config, split='train', map_names=None, seeds_p
                 cfg,
                 num_scenarios=1000,
                 control_dt_s=config.control_dt_s,
-                environment_overrides={'force_destroy': config.force_destroy_between_resets},
+                environment_overrides={
+                    'force_destroy': config.force_destroy_between_resets,
+                    'traffic_density': getattr(config, 'traffic_density', 0.3),
+                },
                 semantic_order=ordered_semantics,
             )
             try:

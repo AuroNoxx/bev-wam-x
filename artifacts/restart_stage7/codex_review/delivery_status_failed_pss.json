@@ -1,6 +1,0 @@
-{
-  "completed": false,
-  "current": "report_corrected",
-  "previous_error": "Traceback (most recent call last):\n  File \"/home/auronox/Desktop/mini-wa-jepa/scripts/audit_stage7_delivery.py\", line 53, in audit\n    run('report',[sys.executable,'-m','scripts.report_stage7','--root',root])\n  File \"/home/auronox/Desktop/mini-wa-jepa/scripts/audit_stage7_delivery.py\", line 22, in run\n    if result.returncode:raise RuntimeError(f'{name} failed ({result.returncode}); see {log}')\n                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nRuntimeError: report failed (1); see artifacts/restart_stage7/codex_review/report.log\n",
-  "error": "Traceback (most recent call last):\n  File \"/home/auronox/Desktop/mini-wa-jepa/artifacts/restart_stage7/codex_review/finalize_after_report_fix.py\", line 21, in <module>\n    run('report_corrected',[sys.executable,'-m','scripts.report_stage7'])\n  File \"/home/auronox/Desktop/mini-wa-jepa/artifacts/restart_stage7/codex_review/finalize_after_report_fix.py\", line 12, in run\n    if p.returncode:raise RuntimeError(f'{name} failed: see {log}')\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nRuntimeError: report_corrected failed: see artifacts/restart_stage7/codex_review/report_corrected.log\n"
-}

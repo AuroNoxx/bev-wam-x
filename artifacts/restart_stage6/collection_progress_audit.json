@@ -1,9 +1,0 @@
-{
-  "provisional": true,
-  "completed_contexts": 134,
-  "repeat_commands": 34,
-  "identical_future_and_states": 34,
-  "mean_actual_candidate_endpoint_separation_m": 3.8433886151112135,
-  "max_actual_candidate_endpoint_separation_m": 6.26030969619751,
-  "model_evaluation": false
-}

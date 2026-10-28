@@ -1,5 +1,0 @@
-{
-  "passed": false,
-  "checks": [],
-  "error": "Error: {\"exceptionId\":1,\"text\":\"Uncaught\",\"lineNumber\":0,\"columnNumber\":14,\"scriptId\":\"3\",\"exception\":{\"type\":\"object\",\"subtype\":\"error\",\"className\":\"TypeError\",\"description\":\"TypeError: Cannot read properties of null (reading 'innerText')\\n    at <anonymous>:1:15\",\"objectId\":\"1947844351773958216.2.2\"}}"
-}

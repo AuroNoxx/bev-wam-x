@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=TensorBoard 看板
+Comment=自动驾驶世界模型训练监控看板
+Exec=/mnt/ai/projects/bev-wam-x/tensorboard.sh
+Icon=utilities-system-monitor
+Path=/mnt/ai/projects/bev-wam-x
+Terminal=false
+Categories=Development;Science;
+StartupNotify=true

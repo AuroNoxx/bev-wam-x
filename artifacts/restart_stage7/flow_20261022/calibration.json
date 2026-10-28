@@ -1,7 +1,0 @@
-{
-  "step_seconds": 0.3911805559999948,
-  "peak_vram_gib": 0.2078871726989746,
-  "model_hash_before": "c9d6720a88e0039c83f790a3f09b8a4cf70170dbe451b72ccddb5b7df28dcd71",
-  "model_hash_after": "c9d6720a88e0039c83f790a3f09b8a4cf70170dbe451b72ccddb5b7df28dcd71",
-  "isolated": true
-}

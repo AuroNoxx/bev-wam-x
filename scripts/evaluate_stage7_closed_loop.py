@@ -11,7 +11,12 @@ import time
 import traceback
 import numpy as np
 import torch
-from torch.nn.attention import SDPBackend,sdpa_kernel
+from torch.nn.attention import SDPBackend, sdpa_kernel
+import sys
+repo_root = Path(__file__).resolve().parent.parent
+if str(repo_root) not in sys.path:
+    sys.path.insert(0, str(repo_root))
+
 from configs.stage2 import Stage2Config
 from configs.stage7 import Stage7Config
 from configs.planner7 import Planner7Config
@@ -92,16 +97,17 @@ def save_episode(folder,records,states,encoded,future_samples,arm,seed,map_spec,
         fallback_fraction=float((arrays['selected_index']<0).mean()))
 
 
-def evaluate(output,arm,seed,smoke=False):
+def evaluate(output,arm,seed,smoke=False,flow_checkpoint=None,target_map=None,target_seed=None,traffic_density=None):
     faulthandler.enable()
     if not torch.version.hip or torch.version.cuda:raise RuntimeError('Native ROCm required')
     torch.set_num_threads(4);cfg=Stage7Config();env_cfg=Stage2Config();out=Path(output);out.mkdir(parents=True,exist_ok=False)
     if not smoke and seed not in cfg.training_seeds:
         raise ValueError('Formal evaluation uses the two prespecified training seeds')
-    policy=Stage7Policy(arm,seed);torch.cuda.reset_peak_memory_stats()
+    policy=Stage7Policy(arm,seed,flow_path=flow_checkpoint);torch.cuda.reset_peak_memory_stats()
     report=dict(**provenance(cfg),stage=7,completed=False,smoke=smoke,arm=arm,training_seed=seed,
         parameter_count=policy.parameter_count,checkpoints=policy.provenance,planner_config=asdict(Planner7Config()),
         semantic_order=True,
+        traffic_density=float(traffic_density if traffic_density is not None else getattr(cfg, 'traffic_density', 0.3)),
         control_dt_s=.1,max_steps=80 if smoke else cfg.closed_loop_max_steps,episodes=[],
         latency_definition='current BEV to HIP encoder, observed history, generated candidates, world/risk as needed, geometry, selection and tracker; first 20 steps excluded',
         ground_truth_boundary='subsequent states only joined after episode; evaluator route geometry is not a policy input')
@@ -112,15 +118,20 @@ def evaluate(output,arm,seed,smoke=False):
     _,restore=configure_egl(1);started=time.perf_counter()
     try:
         with torch.inference_mode(),sdpa_kernel(SDPBackend.MATH):
-            for map_i,map_spec in enumerate(('SCS','CSC')):
-                base=cfg.closed_loop_seeds[map_i]
-                # Smoke uses validation families/seeds; it never becomes formal evidence.
-                if smoke:map_spec=('CC','SS')[map_i];base=880000+map_i*10000
+            maps_to_run = (target_map,) if target_map else (('SCS','CSC') if not smoke else ('CC','SS'))
+            density_use = float(traffic_density if traffic_density is not None else getattr(cfg, 'traffic_density', 0.3))
+            overrides = {'force_destroy': True, 'traffic_density': density_use}
+            for map_i,map_spec in enumerate(maps_to_run):
+                base=cfg.closed_loop_seeds[0] if map_spec=='SCS' else cfg.closed_loop_seeds[1]
+                if smoke:base=880000+map_i*10000
                 sim=make_env(map_spec,base,env_cfg,num_scenarios=1000,control_dt_s=.1,
-                    environment_overrides={'force_destroy':True},semantic_order=True)
+                    environment_overrides=overrides,semantic_order=True)
                 try:
                     for episode_i in range(1 if smoke else cfg.closed_loop_seeds_per_map):
-                        episode_seed=base+episode_i;obs,_=sim.reset(seed=episode_seed)
+                        episode_seed=base+episode_i
+                        if target_seed and episode_seed != target_seed:
+                            continue
+                        obs,_=sim.reset(seed=episode_seed)
                         provider=NativeBEVProvider(sim,env_cfg.bev);provider.reset(obs)
                         tracker=TrajectoryTracker(sim.agent,.1);scorer=NavigationExpert(sim,env_cfg.expert,.1)
                         history=ObservedHistory(.1,.1);bevs=deque(maxlen=4);past=deque(maxlen=4)
@@ -186,4 +197,8 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',required=True)
     p.add_argument('--arm',choices=['mse','geometry','full'],required=True)
     p.add_argument('--seed',type=int,default=20261021);p.add_argument('--smoke',action='store_true')
-    a=p.parse_args();evaluate(a.output,a.arm,a.seed,a.smoke)
+    p.add_argument('--flow-checkpoint',default=None)
+    p.add_argument('--target-map',default=None)
+    p.add_argument('--target-seed',type=int,default=None)
+    p.add_argument('--traffic-density',type=float,default=None)
+    a=p.parse_args();evaluate(a.output,a.arm,a.seed,a.smoke,a.flow_checkpoint,a.target_map,a.target_seed,a.traffic_density)

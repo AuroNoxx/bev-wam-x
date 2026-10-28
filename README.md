@@ -1,168 +1,81 @@
-# Mini-WA-JEPA
+# bev-wam-x
 
-> **从 MetaDrive 到 3D 赛车游戏**：基于 JEPA 潜空间预测思想的轻量级 BEV 时空联合世界模型与闭环轨迹规划系统。
+**基于 BEV 的世界模型与轨迹规划研究项目。** 在 MetaDrive 中构建语义鸟瞰输入、未来潜空间预测、世界与动作联合生成，以及可追溯的开环/闭环评测。原项目名为 Mini-WA-JEPA。
 
-[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-ROCm%20%7C%20CUDA%20%7C%20CPU-red.svg)](https://pytorch.org/)
-[![MetaDrive](https://img.shields.io/badge/MetaDrive-0.4.3-green.svg)](https://github.com/metadriverse/metadrive)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[v1 技术文档](docs/V1.md) · [v2 技术文档](docs/V2.md) · [复现说明](docs/REPRODUCIBILITY.md) · [结果证据](docs/evidence/README.md) · [目标与协议](GOAL.md) · [任务记录](TASKS.md)
 
-[项目目标与规范 (GOAL.md)](GOAL.md) · [开发进度追踪 (TASKS.md)](TASKS.md) · [可视化规范 (VISUALIZATION.md)](docs/VISUALIZATION.md)
+## 项目边界
 
----
+这是个人研究与工程验证项目，尚未完成通用闭环驾驶验收或赛车游戏迁移。项目采用 JEPA 潜空间预测、Flow Matching 等方法独立实现实验系统；不宣称复现官方 WA-JEPA，不使用其代码或预训练权重。
 
-## 🎯 项目目标
+模型学习输出轨迹；转向、油门/制动由 Pure Pursuit + PID 等代码控制器执行。当前证据主要来自 AMD RX 7900 XT / ROCm，**不是 Orin-X 部署测试**。
 
-本项目旨在构建一个基于 BEV（鸟瞰图）的轻量端到端自主驾驶与轨迹规划系统。
+## 两代实现
 
-**最终目标**：
-1. 先在 **MetaDrive** 虚拟仿真环境中训练并验证能够自主闭环驾驶的 BEV 世界模型；
-2. 再将学到的驾驶能力迁移到实际运行的 **3D 赛车游戏** 中（通过 BEV 感知与控制适配器）。
+| 版本 | 主要设计 | 当前定位 |
+|---|---|---|
+| **bev-wam-x v1** | BEV 编码与确定性潜空间/轨迹联合学习；后续扩展 Flow 候选、独立动作条件 WAM、风险评分 | 历史基线与失败分析；代码归档在 `archive/v1_legacy_20261024/code/`，共享基础模块仍在根目录 |
+| **bev-wam-x v2** | 历史 BEV 和导航等合法条件；未来场景 token 与轨迹 token 在共享 Transformer 内联合流匹配 | 当前研究主线；源码在根目录 `models/`、`dataset/`、`scripts/` 等 |
 
-核心探索与待回答的科学问题：
-- **潜空间预测的有效性**：在潜空间学习未来表征（JEPA），能否真正改善驾驶决策，并在感知退化（遮挡、丢帧）时提供超越传统 CNN/端到端回归的鲁棒性？
-- **跨环境迁移能力**：在仿真环境中学习到的空间表征与驾驶策略，能否通过轻量适配层有效迁移到全新的 3D 赛车游戏？
+两代均含 BEV 实现。旧归档说明把 v1 简称为 RGB/camera 不准确：保留代码 `models/latent.py` 的输入明确是四通道 BEV。架构代际、数据 schema v2 和 Stage 3 v3 实验修订是不同概念，不能混用。
 
-> [!NOTE]
-> 本项目借鉴 JEPA (Joint-Embedding Predictive Architecture) 思想，在潜空间预测未来而非高维像素级重建。全套模型结构、数据管线与训练逻辑均由本项目独立设计与实现，不依赖外部大型预训练权重或私有依赖。
+## v2 数据与模型路径
 
----
-
-## 🧠 系统架构
-
-Mini-WA-JEPA 采用“时空编码 → 潜空间演化 → 显式轨迹规划 → 控制器执行”的分层架构：
-
-```
-[4 帧历史 BEV 观测] (过去 0.3s, 4×128×128)
-       │
-       ▼ Conv-Stem + Transformer 编码器
-[时空潜空间 Token 序列]
-       │
-       ├────────────────────────────────────────┐
-       ▼ JEPA 世界预测器 (Transformer)          ▼ 显式轨迹规划头 (MLP / Flow Matching)
-[未来 4 步潜空间表征]                           [未来 10 步轨迹路点] (0.2s~2.0s)
-(受 VICReg 防塌缩正则约束)                      (x, y, v, heading)
-                                                │
-                                                ▼ Adaptive Pure Pursuit + PID 控制器
-                                          MetaDrive 闭环仿真 / 游戏环境 (dt=0.02s)
+```text
+4 帧历史语义 BEV [B,4,4,128,128]
+  + 历史自车运动 / 实际执行动作 / 导航 / 车辆参数 / 静态车道许可
+                  |
+           BEV 编码与条件投影
+                  |
+       共享 World-Action Transformer
+       /                              \
+未来场景 latent                    10 个轨迹路点
+t+0.5/1.0/1.5/2.0s                 (x,y,v,heading), t+0.2...2.0s
+                                      |
+                           Pure Pursuit + PID, 10Hz
+                                      |
+                                MetaDrive 闭环
 ```
 
-1. **BEV 感知输入**：128×128 四通道语义 BEV（覆盖自车周边 64m×64m），自车居中、朝向固定朝上，提供清洁且几何对齐的空间拓扑。
-2. **JEPA 潜空间世界模型**：仅在特征潜空间预测未来演化，避免昂贵且容易过度拟合无关细节的像素级重建，采用 VICReg 正则（不变性 + 方差 + 协方差）防止表征坍缩。
-3. **显式轨迹规划**：模型输出物理意义明确的未来 10 个路点 `(x, y, v, heading)`，而非黑盒底层控制量。
-4. **闭环控制**：通过自适应 Pure Pursuit 与纵向速度控制器将轨迹转化为平滑动力学输入，兼顾规划表现与控制稳定性。
+未来 BEV 经 EMA teacher 生成训练目标，推理不读取未来真值。Stage 3 另含 residual/hybrid 与训练期 masked future patch completion 实验。对照包括 A 确定性回归、B Action-only Flow、C 分离式级联、D 联合流匹配及 D0 消融；已有运行并不意味着每项公平性约束已经全部验收。
 
----
+## 当前结果：按版本和证据范围解读
 
-## 🗺️ 项目路线与进展
+截至 2026-10-27 的文件审计（没有新增训练）：
 
-项目严格遵循 [GOAL.md](GOAL.md) 制定的 9 阶段里程碑推进：
+| 范围 | 已有证据 | 结论边界 |
+|---|---|---|
+| v1 Stage 3/4/6 | 历史 acceptance 记录通过；Stage 5 完成评测协议 | 不等于 v2 通过；Stage 5 的通过标记不保证正向鲁棒性收益 |
+| v1 Stage 7 | `scientific_passed=false` | 生成/风险/规划科学门槛未通过 |
+| v2 Stage 3 masked | 两种子、20 epochs、完整验证；+2s E_norm 0.7090/0.7776 | +0.5/+1/+1.5s 未全部达到 0.85，整体 **未通过** |
+| v2 Stage 4 开环 | 8,147 个动作合格锚点；D 两种子 ADE 0.1693/0.1769m，FDE 0.3798/0.3964m | 有效标签口径通过开环门槛；不代表闭环或额外世界模型收益 |
+| v2 Stage 4 闭环诊断 | D22 六局无车直线 6/6 到达；另四局中三局越界 | `development_only=true`，`stage4_accepted=false` |
+| v2 Stage 5/6/7 | 有历史压力测试、一致性诊断与闭环报告 | 不构成连续通过；Stage 7 成功结论已勘误撤回 |
+| Stage 8/9 | 无本次启动或验收 | 未见场景盲测、3D 游戏迁移仍待后续研究 |
 
-| 阶段 | 阶段目标 | 核心任务 | 当前状态 |
-| :--- | :--- | :--- | :---: |
-| **阶段 1** | 环境与 BEV 验证 | MetaDrive EGL 无头渲染、自车坐标系与 4 通道 BEV 标定 | ✅ 已完成 |
-| **阶段 2** | 专家数据与驾驶基线 | 120k 帧专家数据集构建，ResNet-18 行为克隆基线建立 | ✅ 已完成 |
-| **阶段 3** | 独立未来潜空间预测 | 编码器 + JEPA 预测器，VICReg 正则，验证潜空间预测优于简单基线 | ✅ 已完成 |
-| **阶段 4** | 联合世界预测与轨迹预测 | 联合训练时空潜变量与 10 步显式轨迹，严格动作消融对照 (Action-only) | ✅ 已完成 |
-| **阶段 5** | 遮挡与丢帧压力测试 | BEV 遮挡、边界缺失、丢帧下测试 Mini-WA-JEPA 相比 CNN 基线的鲁棒性 | ✅ 实测完成 |
-| **阶段 6** | 动作条件世界预测 | 引入候选轨迹作为条件，预测不同驾驶动作对应的未来演化 | ✅ 实测通过 |
-| **阶段 7** | Flow Matching 轨迹生成与候选规划 | 多样化候选轨迹生成，结合风险评估头与评分机制择优规划 | 实测完成；科学门槛未通过 |
-| **阶段 8** | MetaDrive 完整闭环验收 | 多种子与极端场景无接管自主闭环驾驶验收，为游戏迁移把关 | 📋 计划中 |
-| **阶段 9** | 迁移到 3D 赛车游戏 | 适配目标游戏画面提取 BEV，控制量映射，完成跨平台闭环迁移 | 🎯 最终目标 |
+结果分母、种子、失败项、控制周期和可核验 JSON 见 [v2 文档](docs/V2.md)。本仓库不把小场景到达率、单时域误差或潜变量余弦相似度解释为完整驾驶能力。
 
-阶段6已完成两组种子的条件/无条件对照：测试潜变量误差降低45.05%/45.54%，后果差分误差降低66.43%/66.62%；全部科学与交付门槛通过，71项测试通过。
-结果限于32个测试起点、8个独立种子下的动作后果预测，没有实现候选选路器，也不代表新的自主驾驶成功率。详见 [阶段6报告](artifacts/restart_stage6/REPORT.md)。
-现有 chapter 的 marimo 入门交互已接入，阶段7已获用户授权执行。第7章读取真实 Flow 积分与同一驾驶记录的候选、评分、执行和下一轮规划；当前两组 Flow 的生成精度/运动学门槛未通过，完整科学结论以 [阶段7报告](artifacts/restart_stage7/REPORT.md) 为准。保留原 MSE 策略，阶段8未启动。
-
----
-
-## 🔬 核心对照实验设计
-
-本项目坚持以实验与数据为依据，所有关键模块均设有基准对照：
-
-- **世界模型有效性**：联合训练模型 vs 动作对照消融 (Action-only，同架构仅关停世界损失)。
-- **网络表征能力**：Mini-WA-JEPA vs 经典 CNN / ResNet 行为克隆基线。
-- **环境鲁棒性**：完整 BEV vs 动态遮挡、边界缺失与突发连续丢帧。
-- **规划机制对比**：确定性 MSE 回归规划 vs Flow Matching 多样化生成 + 风险评分规划。
-- **跨域迁移效果**：赛车游戏零样本直接迁移 vs 少量目标域数据适配。
-
----
-
-## ⚡ 快速开始
-
-面向入门开发者的六章交互课程：运行 `./start.sh`，或用 `./start.sh --edit` 查看 Marimo 单元格。
-每章包含联动滑块、逐步讲解、中文注释代码、练习与正式源码；教学示例和实测结果分别标明来源。
-详见 [课程说明](chapters/README.md) 与 [交互验证记录](docs/LEARNING_WORKBENCH.md)。
-
-### 1. 环境准备
-
-本项目支持 Linux 平台，具备硬件自适应能力（支持 AMD ROCm / NVIDIA CUDA / CPU）：
+## 阅读与运行
 
 ```bash
-# 克隆仓库
-git clone https://github.com/Ant1mage/mini-wa-jepa.git
-cd mini-wa-jepa
-
-# 安装依赖
-bash scripts/bootstrap.sh
-.venv/bin/pip install -r requirements-training.txt -r requirements-visualization.txt
-
-# 硬件自适应与环境诊断
-.venv/bin/python -m scripts.check_rocm
+git clone https://github.com/AuroNoxx/bev-wam-x.git
+cd bev-wam-x
+# 阅读源码和 docs/evidence 不需要下载模型或数据。
 ```
 
-### 2. 运行单元测试
+运行依赖包括 Python 3.12、PyTorch/ROCm、MetaDrive/Panda3D；训练和评测还需要未随 Git 发布的数据与权重。原 `scripts/bootstrap.sh` 使用作者本机共享环境配置，**不是通用的一键安装脚本**。迁移后的环境与路径问题、测试命令及历史复现方法见 [REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md)。
 
-```bash
-.venv/bin/python -m unittest discover -s tests -v
-```
+## 目录
 
-### 3. 数据采集与模型训练
+- `models/`：BEV 编码器、未来潜空间 Flow、联合 World-Action 模型及对照。
+- `dataset/`：样本时序、掩码、行为资格与导航数据。
+- `env/`、`controller/`：MetaDrive/语义 BEV、车辆控制与路线约束。
+- `evaluation/`、`scripts/`、`tests/`：度量、训练/诊断入口与回归测试。
+- `mini_wa_jepa/`：保留的 Python 兼容包名；展示名与仓库名统一为 `bev-wam-x`。
+- `archive/v1_legacy_20261024/`：v1 源码与设计归档；大型压缩包仅在本地。
+- `chapters/`：v1 为主的交互教学材料，不能作为 v2 成绩来源。
+- `docs/`：两代说明、冻结协议、可发布证据与复现限制。
 
-```bash
-# 采集 BEV 专家数据
-.venv/bin/python -m scripts.collect_stage2_parallel
+## 命名与兼容
 
-# 训练行为克隆基线 (CNN/ResNet)
-.venv/bin/python -m scripts.train_baseline
-
-# 阶段 3：训练 VICReg 潜空间自监督世界模型
-.venv/bin/python -m scripts.train_latent
-
-# 阶段 4：训练联合模型与动作消融对照
-.venv/bin/python -m scripts.train_joint --output artifacts/stage4_run/joint
-.venv/bin/python -m scripts.train_joint --action-only --output artifacts/stage4_run/action_only
-```
-
-### 4. 闭环仿真与评估
-
-阶段 5 已完成冻结模型压力评测与交付审计，结果见 [阶段 5 报告](artifacts/restart_stage5/REPORT.md)。协议见 [STAGE5_PROTOCOL.md](docs/STAGE5_PROTOCOL.md)，
-运行记录和进度位于 `artifacts/restart_stage5/`；`open_loop/report.json` 逐条件更新，
-`suite_progress.json` 记录闭环队列，最终报告为 `REPORT.md`。正式结果不使用章节演示曲线。
-
-```bash
-# 运行闭环驾驶评测
-.venv/bin/python -m scripts.evaluate_joint_closed_loop --checkpoint artifacts/stage4_run/joint/best.pt --record
-
-# 启动 Marimo 响应式指标看板 (ADE/FDE、完成率、消融对比)
-.venv/bin/marimo run scripts/dashboard_marimo.py --host 127.0.0.1 --port 2718 --no-token
-```
-
----
-
-## 📁 目录导览
-
-- [`configs/`](configs/): 各阶段超参数配置 (YAML / dataclass)
-- [`env/`](env/): MetaDrive 环境封装、四通道 EGL 语义 BEV 渲染、专家控制器
-- [`models/`](models/): 模型实现（ResNet 基线、JEPA 编码器、时空预测器与联合轨迹头）
-- [`training/`](training/): 损失函数（VICReg、轨迹 MSE、联合损失）与训练循环
-- [`controller/`](controller/): Pure Pursuit 轨迹跟踪与速度控制器
-- [`mini_wa_jepa/`](mini_wa_jepa/): BEV 几何变换、硬件检测与 Rerun 多模态可视化
-- [`scripts/`](scripts/): 数据采集、训练、开闭环评估与看板脚本
-- [`docs/`](docs/): 阶段设计协议与技术规范深入文档
-
----
-
-## 📜 许可
-
-本项目遵循 [MIT License](LICENSE)。
+GitHub 仓库和本地规范目录已更名为 `bev-wam-x`。历史实验目录、checkpoint 字段、冻结协议、旧 Git 快照及 `mini_wa_jepa` 导入路径保留原名，避免破坏溯源、权重加载与现有脚本。旧目录兼容链接不包含另一份数据。详见 [命名与发布说明](docs/NAMING_AND_RELEASE.md)。

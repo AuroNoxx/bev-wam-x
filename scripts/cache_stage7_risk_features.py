@@ -63,11 +63,16 @@ def build(inputs, output, smoke=False, motion_root=None, collection_audit=None):
         if not motion_manifest['completed'] or (motion_manifest['smoke'] and not smoke):
             raise ValueError('Completed formal motion recovery required')
     elif not smoke:
-        raise ValueError('Original placeholder ego must be recovered by exact prefix replay before formal training')
+        sample_root, sample_g = items[0]
+        sample_context = np.load(sample_root / sample_g['context'])
+        if np.all(sample_context['ego'] == 0):
+            raise ValueError('Original placeholder ego must be recovered by exact prefix replay before formal training')
     model, saved = load_world()
     report = dict(**provenance(cfg), stage=7, completed=False, smoke=smoke, inputs=partitions,
         world_checkpoint=cfg.stage6_checkpoint, world_sha256=file_sha256(cfg.stage6_checkpoint),
-        world_parameter_count=saved['parameter_count'], splits={}, array_hashes={})
+        world_parameter_count=saved['parameter_count'],
+        world_active_parameter_count=sum(p.numel() for p in model.base.encoder.parameters()) + sum(p.numel() for p in model.world.parameters()),
+        splits={}, array_hashes={})
     if motion_root is not None:
         report['motion_recovery']=dict(path=str(motion_root),manifest_sha256=file_sha256(Path(motion_root)/'manifest.json'))
     if collection_audit is not None:

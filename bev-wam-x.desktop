@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=bev-wam-x
+Comment=自动驾驶世界模型渐进式学习工作台
+Exec=/mnt/ai/projects/bev-wam-x/start.sh
+Icon=applications-science
+Path=/mnt/ai/projects/bev-wam-x
+Terminal=false
+Categories=Development;Education;
+StartupNotify=true

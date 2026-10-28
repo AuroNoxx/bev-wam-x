@@ -1,2 +1,2 @@
-# PyTorch ROCm is installed without automatic CUDA/Triton dependencies by bootstrap.sh.
+# PyTorch ROCm is shared from ~/.venvs/llm-rocm; bootstrap never reinstalls it.
 tensorboard==2.20.0

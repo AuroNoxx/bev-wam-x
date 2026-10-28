@@ -1,7 +1,0 @@
-{
-  "completed": false,
-  "jobs": [],
-  "started": 1792426187.3665226,
-  "current": "waiting_for_collection",
-  "error": "Traceback (most recent call last):\n  File \"/home/auronox/Desktop/mini-wa-jepa/scripts/run_stage7_remaining.py\", line 30, in run\n    if any(m.get('error') for m in manifests):raise RuntimeError('Collector failed; no context silently removed')\n                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nRuntimeError: Collector failed; no context silently removed\n"
-}

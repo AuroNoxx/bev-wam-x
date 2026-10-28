@@ -158,6 +158,8 @@ def _(load_stage_runs, mo, project_root, refresh_reports, stage_select):
     mo.vstack([
         mo.md(f"### 阶段 {stage_select.value}：消融、开环与闭环实测指标"),
         mo.md("缺失指标留空；阶段 3 的表示学习任务不产生轨迹 ADE/FDE 时，不填零。"),
+        mo.md("**第二版损失与整条轨迹消融为验证集结果**：按种子与温度分别比较原损失、米制路线/终点损失和整条路线系数生成；不能解释为测试集或闭环验收通过。")
+        if any(row.get("evaluation_kind") in ("validation_loss_ablation", "validation_structured_ablation") for row in stage_rows) else mo.md(""),
         mo.ui.table(stage_rows, selection=None) if stage_rows else mo.md("**尚无新版阶段报告。** 旧版数据不作为新版验收结果。"),
         mo.md("\n\n".join(stage_errors)) if stage_errors else mo.md(""),
         mo.accordion({"报告来源与复现信息": mo.json(stage_sources)}) if stage_sources else mo.md(""),
@@ -547,6 +549,65 @@ def _(Image, json, mo, project_root, refresh_stage6):
         mo.accordion({"配对区间与复现噪声": mo.json({"paired": _result6.get("paired"), "noise": _result6.get("replay_noise")})}) if _result6 else mo.md(""),
         mo.json(_accept6) if _accept6 else mo.md("阶段6尚未完成验收。"),
     ])
+    return
+
+
+@app.cell
+def _(mo, project_root):
+    _aligned_paths = sorted((project_root / "artifacts/bev_wa_alignment").glob("stage3*/results.json"))
+    aligned_stage3_run = mo.ui.dropdown(
+        options={p.parent.name: p for p in _aligned_paths},
+        value=_aligned_paths[-1].parent.name if _aligned_paths else None,
+        label="Stage 3 aligned experiments (full validation)")
+    aligned_stage3_refresh = mo.ui.run_button(label="刷新 Stage 3 aligned 结果")
+    mo.hstack([aligned_stage3_run, aligned_stage3_refresh])
+    return aligned_stage3_run, aligned_stage3_refresh
+
+
+@app.cell
+def _(aligned_stage3_run, aligned_stage3_refresh, json, mo, project_root):
+    aligned_stage3_refresh.value
+    _selected = aligned_stage3_run.value
+    _comparison = []
+    for _p in sorted((project_root / "artifacts/bev_wa_alignment").glob("stage3*/results.json")):
+        _data = json.loads(_p.read_text())
+        for _run in _data.get("training_runs", {}).values():
+            _m = _run["final_metrics"]
+            _comparison.append({"experiment": _p.parent.name, "seed": _run["seed"],
+                                **{h: r["normalized_mse"] for h, r in _m["results_by_horizon"].items()},
+                                "rank": _m["effective_rank"], "var/std_mean": _m["token_variance"],
+                                "gate": _m["all_passed"], "ADE": None, "FDE": None, "closed_loop": None})
+    aligned_stage3_data = json.loads(_selected.read_text()) if _selected else None
+    mo.vstack([mo.md("### Stage 3 aligned ablations — final full-validation E_norm"),
+               mo.md("E_norm ≤ 0.85 for all horizons; rank ≥ 16; std_mean ≥ 0.10. ADE/FDE/closed-loop remain missing at Stage 3."),
+               mo.ui.table(_comparison, selection=None) if _comparison else mo.md("No results yet.")])
+    return (aligned_stage3_data,)
+
+
+@app.cell
+def _(aligned_stage3_data, mo):
+    _views = []
+    if aligned_stage3_data:
+        import matplotlib.pyplot as _plt_masked
+        for _run in aligned_stage3_data["training_runs"].values():
+            _hist = _run["history"]
+            _fig, _ax = _plt_masked.subplots(1, 3, figsize=(13, 3.5))
+            _x = [r["epoch"] for r in _hist]
+            _ax[0].plot(_x, [r["train_flow_loss"] for r in _hist], label="flow")
+            if all("mask_loss" in r for r in _hist):
+                _ax[0].plot(_x, [r["mask_loss"] for r in _hist], label="mask")
+            for _h in ("+0.5s", "+1.0s", "+1.5s", "+2.0s"):
+                _ax[1].plot(_x, [r["norm_mse"][_h] for r in _hist], label=_h)
+            _ax[1].axhline(.85, linestyle="--", color="red")
+            _ax[2].plot(_x, [r["effective_rank"] for r in _hist], label="rank")
+            for _a in _ax:
+                _a.set_xlabel("epoch")
+                _a.legend()
+            _fig.suptitle(f"Seed {_run['seed']}: epoch metrics use first 32 validation batches")
+            _fig.tight_layout()
+            _views.append(mo.as_html(_fig))
+            _plt_masked.close(_fig)
+    mo.vstack(_views) if _views else mo.md("")
     return
 
 

@@ -1,5 +1,0 @@
-{
-  "completed": true,
-  "current": "delivery_complete",
-  "previous_error": "Traceback (most recent call last):\n  File \"/home/auronox/Desktop/mini-wa-jepa/artifacts/restart_stage7/codex_review/finalize_after_report_fix.py\", line 21, in <module>\n    run('report_corrected',[sys.executable,'-m','scripts.report_stage7'])\n  File \"/home/auronox/Desktop/mini-wa-jepa/artifacts/restart_stage7/codex_review/finalize_after_report_fix.py\", line 12, in run\n    if p.returncode:raise RuntimeError(f'{name} failed: see {log}')\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nRuntimeError: report_corrected failed: see artifacts/restart_stage7/codex_review/report_corrected.log\n"
-}

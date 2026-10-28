@@ -1,5 +1,0 @@
-{
-  "completed": false,
-  "current": "report",
-  "error": "Traceback (most recent call last):\n  File \"/home/auronox/Desktop/mini-wa-jepa/scripts/audit_stage7_delivery.py\", line 53, in audit\n    run('report',[sys.executable,'-m','scripts.report_stage7','--root',root])\n  File \"/home/auronox/Desktop/mini-wa-jepa/scripts/audit_stage7_delivery.py\", line 22, in run\n    if result.returncode:raise RuntimeError(f'{name} failed ({result.returncode}); see {log}')\n                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nRuntimeError: report failed (1); see artifacts/restart_stage7/codex_review/report.log\n"
-}

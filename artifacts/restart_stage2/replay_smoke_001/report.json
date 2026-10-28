@@ -1,8 +1,0 @@
-{
-  "schema_version": 2,
-  "episode_id": 0,
-  "seed": 1000,
-  "frames": 80,
-  "video": "outputs/videos/stage2_v2_replay/map-4b45a7c9365f_seed-1000_20261016_031212_701563.mp4",
-  "max_position_reconstruction_error_m": 0.0
-}
