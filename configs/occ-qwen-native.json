@@ -1,0 +1,55 @@
+{
+  "version": "native-occ-qwen-preflight-v1",
+  "formal_training_paused": false,
+  "training_authorization": "2026-11-17 user: 你别停啊大哥，我没法实时看; root explicitly directed pretrained GPU verification followed by complete formal run",
+  "manifest": "data/occ_v3/manifest.json",
+  "model_entry": "occ_qwen_native_flow.NativeOccQwenJointFlow",
+  "input_shape_tzyx": [
+    4,
+    20,
+    128,
+    128
+  ],
+  "voxel_xyz_m": [
+    0.4,
+    0.4,
+    0.4
+  ],
+  "bounds_xyz_m": [
+    [
+      -25.6,
+      25.6
+    ],
+    [
+      -25.6,
+      25.6
+    ],
+    [
+      -5,
+      3
+    ]
+  ],
+  "history_offsets": [
+    -6,
+    -4,
+    -2,
+    0
+  ],
+  "future_label_offsets": [
+    10,
+    20
+  ],
+  "frame_dt_s": 0.1,
+  "trajectory_points": 25,
+  "trajectory_dt_s": 0.2,
+  "world_output": "latent_only",
+  "occ_decoder_enabled": false,
+  "scene_to_ego_refinement_enabled": false,
+  "batch_size": 8,
+  "workers": 0,
+  "seed": 71,
+  "checkpoint_policy": "latest every 50 steps and epoch end; best validation single-candidate ADE; verified atomic full state",
+  "source_causality_certified": false,
+  "max_epochs": 20,
+  "lr": 0.0001
+}

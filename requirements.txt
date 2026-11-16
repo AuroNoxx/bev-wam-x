@@ -1,0 +1,2 @@
+# CARLA 1.0 client environment only; training uses the preserved .venv-train ROCm environment.
+-r configs/requirements-carla-ue5-lock.txt

@@ -1,0 +1,194 @@
+[
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\diagnostics\\v3-residual-pilot\\resume-test\\atomic.ckpt",
+    "Length": 44610717,
+    "LastWriteTime": "2026-11-15T15:09:51.654662+08:00",
+    "SHA256": "0A06FEE4EA27A12AAD1E23DCEEA27D046F9E9C63DDAF283B0C7BE99D223F8F3B"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\diagnostics\\v3-residual-pilot\\resume-test\\split.ckpt",
+    "Length": 44614565,
+    "LastWriteTime": "2026-11-15T15:09:45.1349312+08:00",
+    "SHA256": "2191FF0754229C04C064DD27FE066DCF94D6EBBE457C54E15581ABC10F5C33EF"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\diagnostics\\v3-residual-pilot\\smoke\\best.ckpt",
+    "Length": 44617117,
+    "LastWriteTime": "2026-11-15T15:08:15.0068297+08:00",
+    "SHA256": "C0D60BFB2CB558F47E5E3D843314A58AE57FD55052C7F03DBB46D9CBEF35B742"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\diagnostics\\v3-residual-pilot\\smoke\\latest.ckpt",
+    "Length": 44617181,
+    "LastWriteTime": "2026-11-15T15:08:15.2623688+08:00",
+    "SHA256": "8D3545AF66F9BD80DB9E3BEE95C57EA30C106DFEE4560DDD5CDAD15B29448A9F"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\joint-occ-v1\\runs\\auxiliary-seed1701\\best.ckpt",
+    "Length": 3462219,
+    "LastWriteTime": "2026-11-15T22:59:22.2330047+08:00",
+    "SHA256": "0B361682CD56758E8C2BE2E306DCDD65F4FE4CB0BB4146A2A7BF68750DE43803"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\joint-occ-v1\\runs\\auxiliary-seed1701\\latest.ckpt",
+    "Length": 3462219,
+    "LastWriteTime": "2026-11-15T22:59:22.2799284+08:00",
+    "SHA256": "1682730B4F4AA75C779A63D50FB8373E6AF1A3FE9DEF9F5EA23F6A9447AAC215"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\joint-occ-v1\\runs\\auxiliary-seed1702\\best.ckpt",
+    "Length": 3462219,
+    "LastWriteTime": "2026-11-15T23:01:23.3114036+08:00",
+    "SHA256": "E5FF84F2AC3D96707DD9BFFEE4F430F368F6FBED484C2C5E37F11D02C1F032ED"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\joint-occ-v1\\runs\\auxiliary-seed1702\\latest.ckpt",
+    "Length": 3462219,
+    "LastWriteTime": "2026-11-15T23:01:23.3601266+08:00",
+    "SHA256": "810C6115F282FD11F6446B019807BBA9A5582083EE2D426C33BB66866D90E934"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\joint-occ-v1\\runs\\fusion-seed1701\\best.ckpt",
+    "Length": 3462219,
+    "LastWriteTime": "2026-11-15T22:59:54.9712666+08:00",
+    "SHA256": "329CAFC2C4E76F203127B3713D112B9405298E03C11A58691B27428B7386DBFC"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\joint-occ-v1\\runs\\fusion-seed1701\\latest.ckpt",
+    "Length": 3462219,
+    "LastWriteTime": "2026-11-15T22:59:55.0242538+08:00",
+    "SHA256": "2F65A7B418B81F0C68F7BF6DD5340CAF5355749ED4B75F9CA08CBACBC84DCC36"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\joint-occ-v1\\runs\\fusion-seed1702\\best.ckpt",
+    "Length": 3462219,
+    "LastWriteTime": "2026-11-15T23:01:56.0641902+08:00",
+    "SHA256": "E745E9FAC5F2A88C6D2A0D7BF220296A2A06D6A9CB3570DCEA9F8CA658A6A24A"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\joint-occ-v1\\runs\\fusion-seed1702\\latest.ckpt",
+    "Length": 3462219,
+    "LastWriteTime": "2026-11-15T23:01:56.120459+08:00",
+    "SHA256": "4F7D3732E27D00057F478093D83BEC9E05E5458D90B24FEAFB84165CDF2A2AAE"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\joint-occ-v1\\runs\\no_occ-seed1701\\best.ckpt",
+    "Length": 2622299,
+    "LastWriteTime": "2026-11-15T22:58:28.514998+08:00",
+    "SHA256": "FB872F7ABF7350D0BDE5A646634D90B1C6B47B8AC3B2BD330894D41FAD816DEA"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\joint-occ-v1\\runs\\no_occ-seed1701\\latest.ckpt",
+    "Length": 2622363,
+    "LastWriteTime": "2026-11-15T22:58:30.2463652+08:00",
+    "SHA256": "0150F06B4575D55EBFF0D3B462B21ACFE02DDD8EFA5EB7384BDBA3D4C984AE82"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\joint-occ-v1\\runs\\no_occ-seed1702\\best.ckpt",
+    "Length": 2622363,
+    "LastWriteTime": "2026-11-15T23:00:32.477258+08:00",
+    "SHA256": "772B65B5824A2940E402E3B96AD41809E92B2934E7DFED79C89801895D039797"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\joint-occ-v1\\runs\\no_occ-seed1702\\latest.ckpt",
+    "Length": 2622363,
+    "LastWriteTime": "2026-11-15T23:00:32.5195673+08:00",
+    "SHA256": "97E9D48C2A8A922095AB46EE18D49BD7CFB82179F607416E864F08C3FCF9CC4A"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\joint-occ-v1\\runs\\original_flow-seed1701\\best.ckpt",
+    "Length": 44616223,
+    "LastWriteTime": "2026-11-15T22:58:20.2199438+08:00",
+    "SHA256": "0F1DCC38F1D7F299C2BC6BCB6C0B4074D1C3545AFDD01E6A33818FE25E7434AA"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\joint-occ-v1\\runs\\original_flow-seed1701\\latest.ckpt",
+    "Length": 44616223,
+    "LastWriteTime": "2026-11-15T22:58:20.4151316+08:00",
+    "SHA256": "5538C372674A27A03DBDFBE3FAECDC4832988E11051E8281EED42D6ACA5654F4"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\joint-occ-v1\\runs\\original_flow-seed1702\\best.ckpt",
+    "Length": 44616223,
+    "LastWriteTime": "2026-11-15T23:00:22.6214655+08:00",
+    "SHA256": "FE582302142983D744380380387017340310CB3775A56532F9EA747B3BBC9BD5"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\joint-occ-v1\\runs\\original_flow-seed1702\\latest.ckpt",
+    "Length": 44616223,
+    "LastWriteTime": "2026-11-15T23:00:22.8094302+08:00",
+    "SHA256": "8826CD705F9A5C44911839EDF62E89F376A2F633957E97868B30C14831CEE7E7"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\joint-occ-v1\\runs\\temporal_flow-seed1701\\best.ckpt",
+    "Length": 3316481,
+    "LastWriteTime": "2026-11-15T22:58:48.4400266+08:00",
+    "SHA256": "5011747FE45C794320EC91D8696FB050BFC5E7C9FA2DCCA0A8E3B0F7D4BB74CA"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\joint-occ-v1\\runs\\temporal_flow-seed1701\\latest.ckpt",
+    "Length": 3316481,
+    "LastWriteTime": "2026-11-15T22:58:48.4836323+08:00",
+    "SHA256": "AF42EC7DA33FC4E12BF017A41322ED0B32731A3FDC5DF9FA750E637F332392B6"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\joint-occ-v1\\runs\\temporal_flow-seed1702\\best.ckpt",
+    "Length": 3316481,
+    "LastWriteTime": "2026-11-15T23:00:50.8029508+08:00",
+    "SHA256": "BE77CF928635985B4A28822B4ECF36885779C35FE7D19BD13512AB76ADA340B0"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\joint-occ-v1\\runs\\temporal_flow-seed1702\\latest.ckpt",
+    "Length": 3316481,
+    "LastWriteTime": "2026-11-15T23:00:50.8514239+08:00",
+    "SHA256": "48E154F2456894C7169929834183BC85919FAE1B9FCE6A9BD66530B9E9FA89E3"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\joint-occ-v1\\tests-matmul\\atomic.ckpt",
+    "Length": 3456529,
+    "LastWriteTime": "2026-11-15T22:57:14.3792079+08:00",
+    "SHA256": "5F01C3F3943DE50A0C8D4D5942A78DD0EB7E525224708322416D8651BD6CBD03"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\joint-occ-v1\\tests-matmul\\split.ckpt",
+    "Length": 3460049,
+    "LastWriteTime": "2026-11-15T22:57:13.4005696+08:00",
+    "SHA256": "BA98B7B7B795F8F003E88516415024DC7AB42812E7A15C425B4DD927544C28C4"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\lightning\\flow-v3\\best.ckpt",
+    "Length": 44616543,
+    "LastWriteTime": "2026-11-15T04:23:49.0941418+08:00",
+    "SHA256": "3EED9B94D68ECC0C036637EFE82842F31E6902F6F9C8D2F812D86D359B9483F3"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\lightning\\flow-v3\\latest.ckpt",
+    "Length": 44616543,
+    "LastWriteTime": "2026-11-15T04:23:49.2847421+08:00",
+    "SHA256": "3EED9B94D68ECC0C036637EFE82842F31E6902F6F9C8D2F812D86D359B9483F3"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\lightning\\flow-v3-absolute-pilot10\\best.ckpt",
+    "Length": 44617181,
+    "LastWriteTime": "2026-11-15T15:18:32.250069+08:00",
+    "SHA256": "3231536A0D1385FAC27525092216650FFE8E12CB8C9971B703472C803B69BCD5"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\lightning\\flow-v3-absolute-pilot10\\latest.ckpt",
+    "Length": 44617181,
+    "LastWriteTime": "2026-11-15T15:20:21.5729214+08:00",
+    "SHA256": "D952BA62D20A39FC905D5A544EBF58153EEF1650E07F40533A07A587A66CCB7E"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\lightning\\flow-v3-cv_residual-pilot10\\best.ckpt",
+    "Length": 44617181,
+    "LastWriteTime": "2026-11-15T15:29:11.5531937+08:00",
+    "SHA256": "CD65F96D88C9A086DB139F8FC2F15DF9FC392F5C65900A90E34387C9345A1E5B"
+  },
+  {
+    "FullName": "E:\\ai\\projects\\highway-occ-flow\\artifacts\\lightning\\flow-v3-cv_residual-pilot10\\latest.ckpt",
+    "Length": 44617181,
+    "LastWriteTime": "2026-11-15T15:31:02.5841051+08:00",
+    "SHA256": "24B3DA12232D1C307E73A4D112C0DEF0E30F1093D3E2EFD9891B9F92119FBD15"
+  }
+]

@@ -1,0 +1,8 @@
+{
+  "approved_manifest": "E:\\ai\\projects\\highway-occ-flow\\docs\\CHECKPOINT_INVENTORY_QWEN_20261116.json",
+  "deleted_count": 205,
+  "bytes": 19588914842,
+  "remaining_manifest_files": [],
+  "nonweight_pt_remaining": 5,
+  "scope": "Only exact 205 manifest checkpoints; no recursive directory deletion"
+}

@@ -1,0 +1,4 @@
+# Add to the existing project ROCm environment; do not replace its torch build.
+pytorch-lightning==2.6.6
+torchdata==0.11.0
+triton-windows==3.6.0.post26

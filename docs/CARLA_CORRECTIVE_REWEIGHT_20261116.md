@@ -1,0 +1,6 @@
+# Fixed-budget corrective-exposure reweight result
+Userauthorizedsinglevariable. Originalon_recoverybaseline reused. Fixedseed2060/navunits/network/objectives/batch12/512updates/dev/noiseunchanged. Replaced1008otherdrawpositionswithsamplesfromsame85uniquecorrectivemovingwindows: corrective221->1229/6144(20%); other2964->1956. Stopped1015anddeceleration1944samefilesatsamepositionspreservedexactly. Noextrauniquecorrectiveinformation.
+
+Completed143.996s,peak.9354GiB,first3RNGtracesmatchedreference. Latest/bestisolated,officialtest/oldweightsuntouched. Resultbaseline->reweight: offcenter114windows0.6slateralerror.12222->.11345m,reverseendpoint.44298->.38816,forward3.376->5.867m(label22.625); smallpartialchangesnotrecoverypass. Fullrecovery628position5.22094->6.31545m,velocityRMSE2.10728->2.35217m/s;decel162endv6.13148->6.65994(label1.83554). Originaldevposition4.72181->6.02488. Vectorjerknotimprovedoverall. Preservingdecelerationdrawsdidnotpreventjointoptimizationtradeoff.
+
+Do notadoptdefaultorclaimdrivingimprovement. Noadditionalclosedlooportraininglaunched. Repetitionof85windowsisnotnewcoverage,andonefixedseedcannotestablishuniversalresult. Simplisticsamplingpercentageadjustmentdoesnotsuffice; anynextworkmustidentifywhyconditionaltrajectorygenerationfailsratherthanblindlysweepmorefractions.

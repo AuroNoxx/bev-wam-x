@@ -1,0 +1,7 @@
+{
+  "phase": "development-not-acceptance",
+  "episodes": [
+    {"seconds": 55, "speed": 120, "traffic": 10, "profile": "fast", "seed": 102, "label": "dev120"},
+    {"seconds": 40, "speed": 120, "traffic": 0, "profile": "fast", "seed": 103, "label": "dev-brake120"}
+  ]
+}

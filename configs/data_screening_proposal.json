@@ -1,0 +1,69 @@
+{
+  "status": "screening_proposal_not_training_config",
+  "target_speed_range_kmh": [
+    0,
+    120
+  ],
+  "speed_bins_kmh": [
+    [
+      0,
+      20
+    ],
+    [
+      20,
+      40
+    ],
+    [
+      40,
+      60
+    ],
+    [
+      60,
+      80
+    ],
+    [
+      80,
+      100
+    ],
+    [
+      100,
+      120
+    ]
+  ],
+  "speed_basis": "actual ego speed, not speed limit or desired speed; retain signed source separately",
+  "episode_metrics": [
+    "seconds_in_each_bin",
+    "longest_contiguous_seconds_in_bin",
+    "unique_episode_count",
+    "unique_road_count",
+    "future_min_max_speed",
+    "actual_vs_command_speed"
+  ],
+  "maneuvers": [
+    "cruise",
+    "following",
+    "stop_go",
+    "merge",
+    "cut_in",
+    "lane_change",
+    "overtake",
+    "abort_lane_change",
+    "hard_brake"
+  ],
+  "retain_transitions": true,
+  "split_unit": "parent episode plus road and branch root; never adjacent frame random split",
+  "hard_checks": [
+    "timestamp and frame mapping",
+    "ego-axis units and transforms",
+    "history only current/past",
+    "future trajectories with validity mask",
+    "observed/free/unknown masks separated",
+    "map/navigation provenance",
+    "source sensor coverage distinct from privileged labels"
+  ],
+  "unknown_fields": "mark pending, never assume passed",
+  "reserved_test": "do not use to screen choices or select models",
+  "existing_data": "preserve; correct OCC offset in independent version before formal use",
+  "preferred_probe": "ZOD Sequences/Drives speed metadata before downloading bulk sensor data",
+  "collect_if_missing": "CARLA targeted speed-maneuver cells with verified expert/control and reactive traffic; not launched"
+}

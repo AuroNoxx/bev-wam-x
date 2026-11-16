@@ -1,0 +1,14 @@
+<!doctype html><meta charset="utf-8"><title>OCC 自主闭环 · 阶段一</title>
+<style>body{margin:0;background:#101822;color:#e7edf4;font:16px system-ui}main{display:flex;gap:22px;padding:22px}canvas{background:#172330;border:1px solid #405367}aside{width:390px}h1{font-size:23px}strong{color:#59e5ae}.muted{color:#a2b6c9;line-height:1.6}button{padding:12px 22px;background:#ad3838;color:white;border:0;border-radius:6px;cursor:pointer}pre{white-space:pre-wrap;line-height:1.5}</style>
+<main><canvas id="c" width="680" height="680"></canvas><aside><h1>OCC → 规划 → 控制</h1><p><strong>连续自主控制 · 无 Flow / 世界模型</strong></p><p class="muted">灰点：实际观测占据体素<br>蓝线：地图车道参考<br>绿线：当前规划轨迹<br>橙框：从 OCC 聚类得到的跟踪目标<br>白框：自车</p><pre id="s">正在连接…</pre><button onclick="fetch('/stop',{method:'POST'})">停止本次运行</button><p class="muted">仅限低速阶段一。语义来自仿真 LiDAR；目标速度由占据历史估计。未观测区域不表示空地。此图是三维占据的俯视显示。</p></aside></main>
+<script>
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+function xy(x,y){return [340-y*6,570-x*6]}
+function line(points,color,width){if(!points?.length)return;ctx.strokeStyle=color;ctx.lineWidth=width;ctx.beginPath();points.forEach((p,i)=>{let a=xy(p[0],p[1]);i?ctx.lineTo(...a):ctx.moveTo(...a)});ctx.stroke()}
+async function render(){try{let d=await(await fetch('/api/status',{cache:'no-store'})).json();ctx.clearRect(0,0,680,680);ctx.strokeStyle='#293c50';ctx.lineWidth=1;for(let x=-10;x<=90;x+=10){let [a,b]=xy(x,0);ctx.beginPath();ctx.moveTo(0,b);ctx.lineTo(680,b);ctx.stroke();ctx.fillStyle='#8fa4b6';ctx.fillText(x+'m',5,b-4)}
+for(let p of d.voxels||[]){let [x,y]=xy(...p);ctx.fillStyle=p[2]>.25?'#8598a8':'#405163';ctx.fillRect(x,y,2,2)}line(d.route,'#438ed4',2);line(d.trajectory,'#4de5a1',3);
+for(let tr of d.tracks||[]){let [x,y]=xy(...tr.center);ctx.strokeStyle='#f0a250';ctx.strokeRect(x-9,y-13,18,26);ctx.fillStyle='#f0a250';ctx.fillText('#'+tr.id+' '+Math.hypot(...tr.velocity).toFixed(1)+'m/s',x+12,y)}
+ctx.fillStyle='white';ctx.fillRect(334,556,12,28);
+let f=(x,n=1)=>x==null?'—':Number(x).toFixed(n);document.getElementById('s').textContent=`状态：${d.status}\n仿真时间：${f(d.simulation_s||d.simulated_seconds)} s\n速度：${f(d.speed_kmh)} km/h\n目标速度：${f(d.target_speed_kmh)} km/h\n规划状态：${d.reason||'—'}\nOCC前方间距：${f(d.occ_gap_m)} m\n观测支持距离：${f(d.visible_support_m)} m\n占据体素：${d.occupied_voxels||'—'}\n跟踪目标：${d.tracked_objects??'—'}\n规划耗时：${f(d.planning_ms)} ms\n横向误差：${f(d.lateral_error_m,3)} m\n碰撞：${d.collision_count??d.collisions?.length??0}\n${d.error||''}`;
+}catch(e){if(!document.getElementById('s').textContent.includes('服务已停止'))document.getElementById('s').textContent+='\n服务已停止或暂不可用'}setTimeout(render,250)}render();
+</script>

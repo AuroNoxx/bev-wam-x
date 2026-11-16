@@ -1,0 +1,17 @@
+# Minimal-loop evidence synthesis (read-only)
+## What actually works
+Causal same-frame semantic-LiDAR/pose collector, synchronized timestamp audit, episode splits, common FLU/unknown adapter, boundedLightningtraining andworkerinterface, realCARLA candidate tracking/guards all executed. These are engineering-path successes, notdrivingacceptance. Semanticlabels/poseareoracle, sparsehitsunknown~99.2%, notproductionperception.
+
+## What failed or remains unknown
+Originalsmallnewdatasetexcludedstartup:61low-speedtrainingwindowsallstaystopped,0go; initialnewmodelguardedbeforecontrol. Addingrealsettled-startcoverage madeonefixed5sstarthealthprogress12.84m,max4.90m/s. Extendedrunfailedlaneat5.8s,left1.80m/heading8.72deg. Leadbrakingat15sneverreached; brakingnotverified. 58plansallsteeredleftcorrectlyaccordingtopredictedlookahead; noobviousFLUsteersignbug. FixedGaussian2301exacerbatedpersistentlateralbias,but16otherseedsalsoshowedbiasedmeans. Zero-noise changedforwardprogress,notfreefix.
+
+Nearnavigationwasdeliberatelyzeroedforinitialsourcefairness. Realrecovery2x2 separatednear-goalavailabilityand50%realrecoverydata; fixedroute/devreferencebugcaughtandcorrectedwithoutrelaxingguards. Neitherconditionalon norrecoveryadditionimprovedoffcenterlateralmetricsunderone512stepbudget. Actualmovingcorrectiveexposureonly221/6144(85unique). Raisingto1229whilepreservingstopped1015anddecel1944samepositions yieldedminoroffcenterbenefitsbutoverall/declerationregression. Noadoption.
+
+## Distribution/conditioning limitations
+Collectednominalsmallroutes+scriptedwaiting/start/brake schedule isnotexpertinteraction. Samevelocity/near-goalcanmeanwaitorgo dependingunobservedintent/timing; no language/taskintent token, fixedrouteobjectiveonly. Trainedhistorymostlycenteredandcalm; onlineaccumulatinglateralbiascreatesoff-distributionstates. Newrealrecoverycovers±.3m/±2deg,notobservedfailed1.8m/8.7deg. Fewroadseeds/oneoptimizationseed andshortbudget cannotseparatecapacity,optimization,andcoverage. Near-yfeatures±.0095(stateunit/50) weaklysensitiveunderfrozeninterventions; uncertainwhetherlearnedignoredorsmallscale/rareinformation. Do notsimultaneouslyrescalenavigationandchangetrajectoryrepresentation.
+
+## Newly quantified output-scale hypothesis
+Unique1570windowbaselinepool:truevelocityvy RMS.08047m/s,absP95.22393,max.39739; qy=vy/10RMS.008047,whilegenerationGaussianstd1 =>physical10m/s. Thusnoiseamplitude~124x lateral targetRMS. qxstd.2501vsqystd.00805; isotropicrepresentation placesverydifferentprecisiondemandontwochannels. Thismakesresidual-noisefailureplausible,notproven. Weightedunique1500poolnearlysamevyRMS.07881. Numbersareunique-windowstats,notempiricaldrawwights.
+
+## Minimum next experiment proposal (not executed)
+Firsttrain-onlyscaleestimate andinvertibleencoding/decoding/unit/initial-boundarytest. Then onechange: retainlongitudinalresidualscale10m/s, uselateralvelocityscale.5m/s justifiedbytrainP95/max(no clipping,notphysicalspeedlimit). Samephysicaldecoder,networkwidth,data/RNG/seed/512budget/navfeatures/lossprescription,saveisolatedoutputs. Trainingbridge andinferenceprior mustuseconsistentcoordinates. Thisnecessarilychangesrelativeoptimizationgeometry/physicalnoise,explicitlyreportasrepresentationfactor notpureinputdata. Requirelateralvariance/bias,near-goalsensitivity,t0/fullkinematics,progress,stops/decelerationandheldroute metrics; noADE-onlyadoption. Ifunsupported,stop ratherthanlongtrain. Preserveguards; closedlooponlyafterofflineassessment, noforcedbrakingcoverageorad-hocseedselection.

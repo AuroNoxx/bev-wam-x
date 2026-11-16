@@ -1,0 +1,22 @@
+{
+  "status": "prepared_not_run_expert_not_qualified",
+  "purpose": "Short diagnostic controller/expert acceptance before any dataset collection",
+  "simulator_candidate": "CARLA 0.9.15 project-local existing installation",
+  "expert_candidate": "autonomousvision/carla_garage PDM-Lite",
+  "expert_revision": "48e6a6dbcb133220333bd65e242fbc2b492bb15b",
+  "verified_default_target_speed_cap_kmh": 72,
+  "known_limit": "autopilot.py line 352 caps initial target speed at 72/3.6 m/s; stock expert cannot provide 100-120 cruise",
+  "target_speed_kmh": [80, 100, 120],
+  "candidate_maps": ["Town04", "Town06"],
+  "map_availability_and_route_geometry": "pending server inspection; a highway map does not make every curve suitable for 120",
+  "probe_sim_seconds_per_case": 60,
+  "control_hz": 20,
+  "record_hz": 10,
+  "cases_in_order": ["straight_accelerate_brake", "curved_lane_hold", "following", "cut_in_and_brake", "lane_change", "overtake_and_abort"],
+  "required_measurements": ["actual_speed_and_time_in_band", "route_geometry_and_lane_limits", "collisions", "ego_footprint_lane_departure", "headway_and_ttc", "acceleration", "jerk", "steering_and_control_saturation", "tracking_error", "sensor_frame_timestamp_and_pose_mapping", "observed_free_unknown_masks"],
+  "acceptance": "No preset expert-quality claim. First calibrate vehicle/controller envelopes, then lock acceptance thresholds before collecting labels.",
+  "expert_truth_separation": "Privileged actor/world state may drive expert or supply labels, never masquerade as observed OCC input.",
+  "split": "Group by road, parent episode and intervention root; no test-set scenario selection.",
+  "no_automatic_speed_cap_patch": true,
+  "no_bulk_collection_until_probe_review": true
+}

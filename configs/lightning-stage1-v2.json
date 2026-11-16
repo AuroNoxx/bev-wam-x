@@ -1,0 +1,21 @@
+{
+  "framework": "pytorch-lightning==2.6.6",
+  "precision": "bf16-mixed",
+  "fused_adamw": true,
+  "channels_last": true,
+  "compile": false,
+  "workers": 2,
+  "conv_autotune": false,
+  "log_every_n_steps": 10,
+  "run_name": "stage1-consistency-v2",
+  "monitor": "trajectory/meanADE8_m",
+  "training": {"lr": 0.00005, "max_epochs": 60, "min_epochs": 15, "patience": 10, "min_delta": 0.01},
+  "objective": {
+    "name": "flow_with_physical_endpoint_auxiliaries_v2",
+    "auxiliary_min_t": 0.5,
+    "position_scale_m": 5.0,
+    "velocity_scale_mps": 2.0,
+    "weights": {"fm": 1.0, "position": 0.2, "kinematics": 0.1, "unit_heading": 0.02, "negative_speed": 0.02}
+  },
+  "note": "Continue from baseline best weights with a new optimizer and run identity. Keep standard FM; add equal-meter XY Huber supervision and position-heading-speed consistency at t>=0.5. Select on full-validation mean candidate ADE, also report oracle ADE, endpoint errors, per-family and physical consistency. Same complete dataset and 5-second horizon."
+}

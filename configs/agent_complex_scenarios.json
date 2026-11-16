@@ -1,0 +1,287 @@
+{
+  "notes": "Development cases, known to scenario author; not blind validation or expert qualification. Background schedules only; no ego maneuver schedule.",
+  "cases": {
+    "braking_with_fast_rear": {
+      "description": "Lead slows while fast traffic approaches from left rear; right lane also occupied",
+      "max_sim_seconds": 35,
+      "route_end_s": 585,
+      "vehicles": [
+        [
+          "ego",
+          -3,
+          150,
+          0
+        ],
+        [
+          "lead",
+          -3,
+          200,
+          50
+        ],
+        [
+          "left_front",
+          -2,
+          340,
+          80
+        ],
+        [
+          "left_rear",
+          -2,
+          45,
+          80
+        ],
+        [
+          "right_front",
+          -4,
+          180,
+          50
+        ],
+        [
+          "right_rear",
+          -4,
+          100,
+          50
+        ],
+        [
+          "follower",
+          -3,
+          65,
+          50
+        ]
+      ],
+      "events": [
+        {
+          "time": 14,
+          "actor": "lead",
+          "speed_kmh": 20
+        },
+        {
+          "time": 24,
+          "actor": "lead",
+          "speed_kmh": 45
+        }
+      ],
+      "task": "Respond to actual lead braking; do not merge in front of approaching left vehicle",
+      "screening": {
+        "collision_events": 0,
+        "emergency_guard_frames": 0,
+        "min_same_lane_front_ttc_s": 2,
+        "min_same_lane_headway_above_10kmh_s": 1,
+        "offroad_frames": 0
+      }
+    },
+    "closing_overtake_gap": {
+      "description": "Slow lead invites overtake; left-front car slows and left-rear fast car closes the target gap",
+      "max_sim_seconds": 35,
+      "route_end_s": 585,
+      "vehicles": [
+        [
+          "ego",
+          -3,
+          150,
+          0
+        ],
+        [
+          "lead",
+          -3,
+          200,
+          35
+        ],
+        [
+          "left_front",
+          -2,
+          210,
+          60
+        ],
+        [
+          "left_rear",
+          -2,
+          85,
+          70
+        ],
+        [
+          "right_front",
+          -4,
+          190,
+          40
+        ],
+        [
+          "right_rear",
+          -4,
+          120,
+          40
+        ],
+        [
+          "follower",
+          -3,
+          65,
+          45
+        ]
+      ],
+      "events": [
+        {
+          "time": 11,
+          "actor": "left_front",
+          "speed_kmh": 20
+        },
+        {
+          "time": 26,
+          "actor": "left_front",
+          "speed_kmh": 55
+        }
+      ],
+      "task": "Reassess overtaking against shrinking target-lane space; defer if unsafe, not forced maneuver completion",
+      "screening": {
+        "collision_events": 0,
+        "emergency_guard_frames": 0,
+        "min_same_lane_front_ttc_s": 2,
+        "min_same_lane_headway_above_10kmh_s": 1,
+        "offroad_frames": 0
+      }
+    },
+    "highspeed_tracking_check": {
+      "road_id": 388,
+      "lanes": [
+        -1,
+        -2,
+        -3
+      ],
+      "ego_lane": -2,
+      "max_speed_kmh": 130,
+      "initialize_velocity": true,
+      "max_sim_seconds": 20,
+      "route_end_s": 1100,
+      "events": [],
+      "screening": {
+        "collision_events": 0,
+        "emergency_guard_frames": 0,
+        "min_same_lane_front_ttc_s": 2,
+        "min_same_lane_headway_above_10kmh_s": 1,
+        "offroad_frames": 0
+      },
+      "description": "Isolated 130 km/h straight lane tracking and lane change calibration; not traffic result",
+      "vehicles": [
+        [
+          "ego",
+          -2,
+          80,
+          100
+        ]
+      ],
+      "compensate_steering_curve": true
+    },
+    "highspeed_multi_vehicle": {
+      "road_id": 388,
+      "lanes": [
+        -1,
+        -2,
+        -3
+      ],
+      "ego_lane": -2,
+      "max_speed_kmh": 130,
+      "initialize_velocity": true,
+      "max_sim_seconds": 29,
+      "route_end_s": 1100,
+      "events": [],
+      "screening": {
+        "collision_events": 0,
+        "emergency_guard_frames": 0,
+        "min_same_lane_front_ttc_s": 2,
+        "min_same_lane_headway_above_10kmh_s": 1,
+        "offroad_frames": 0
+      },
+      "description": "100-130 km/h: following, passing adjacent fast traffic, lane change, overtake and return in one continuous scene",
+      "vehicles": [
+        [
+          "ego",
+          -2,
+          60,
+          100
+        ],
+        [
+          "lead",
+          -2,
+          110,
+          100
+        ],
+        [
+          "left_rear",
+          -1,
+          50,
+          130
+        ],
+        [
+          "left_front",
+          -1,
+          240,
+          130
+        ],
+        [
+          "right_car",
+          -3,
+          65,
+          105
+        ],
+        [
+          "right_front",
+          -3,
+          170,
+          105
+        ],
+        [
+          "right_rear",
+          -3,
+          10,
+          105
+        ],
+        [
+          "follower",
+          -2,
+          10,
+          100
+        ],
+        [
+          "far_front",
+          -2,
+          330,
+          115
+        ]
+      ],
+      "task": "Actual following >=3s, pass original lead and return with safe gap; adjacent traffic present. Full success requires all actions, not mere absence of collision.",
+      "compensate_steering_curve": true
+    },
+    "independent_highspeed_traffic": {
+      "road_id": 388,
+      "lanes": [
+        -1,
+        -2,
+        -3
+      ],
+      "ego_lane": -2,
+      "max_speed_kmh": 130,
+      "initialize_velocity": true,
+      "max_sim_seconds": 29,
+      "route_end_s": 1100,
+      "events": [],
+      "screening": {
+        "collision_events": 0,
+        "emergency_guard_frames": 0,
+        "min_same_lane_front_ttc_s": 2,
+        "min_same_lane_headway_above_10kmh_s": 1,
+        "offroad_frames": 0
+      },
+      "description": "Independent autonomous TM traffic; agent consumes only current observations, private random setup not inspected during episode",
+      "vehicles": [
+        [
+          "ego",
+          -2,
+          80,
+          100
+        ]
+      ],
+      "task": "Drive safely toward 100-130 when observations permit. Overtaking is optional; do not arrange NPC cooperation.",
+      "compensate_steering_curve": true,
+      "independent_traffic": true
+    }
+  }
+}

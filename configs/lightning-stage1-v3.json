@@ -1,0 +1,35 @@
+{
+  "framework": "pytorch-lightning==2.6.6",
+  "precision": "bf16-mixed",
+  "fused_adamw": true,
+  "channels_last": true,
+  "compile": false,
+  "workers": 2,
+  "conv_autotune": false,
+  "log_every_n_steps": 10,
+  "run_name": "stage1-alignment-v3-fresh",
+  "monitor": "trajectory/meanADE8_m",
+  "training": {
+    "lr": 5e-05,
+    "max_epochs": 60,
+    "min_epochs": 15,
+    "patience": 10,
+    "min_delta": 0.01
+  },
+  "objective": {
+    "name": "flow_with_physical_endpoint_auxiliaries_v2",
+    "auxiliary_min_t": 0.5,
+    "position_scale_m": 5.0,
+    "velocity_scale_mps": 2.0,
+    "weights": {
+      "fm": 1.0,
+      "position": 0.2,
+      "kinematics": 0.1,
+      "unit_heading": 0.02,
+      "negative_speed": 0.02
+    }
+  },
+  "note": "User authorized training on corrected v3 data. Fresh random initialization; no old weights. Same v2 objective/grid and fixed train/validation windows. Held-out test remains reserved.",
+  "manifest": "data/occ_v3/manifest.json",
+  "preprocess_version": 3
+}

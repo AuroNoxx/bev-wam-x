@@ -1,0 +1,20 @@
+from train_carla_lateral_scale512 import *
+from interaction_flow import InteractionFlow
+from deterministic_velocity_model import DeterministicVelocityFlow
+from direct_state_velocity import DirectStateVelocity
+from normalized_direct_state import NormalizedDirectState
+class InteractionTask(ScaleTask):
+ def __init__(self,cfg,scales,sha,seed,on):
+  super().__init__(cfg,scales,sha);self.seed=seed;self.mode='regression';self.model=NormalizedDirectState(json.loads((ROOT/'artifacts/carla-direct-rms-paired512/preflight.json').read_text())['interaction_rms']);self.model.set_scales(scales);self.settings.update(interaction_rms=self.model.interaction_rms,direct_state=True,method='regression',seed=seed,nav_y_gain=50,interaction=on,interaction_formula='speed/10*near_y_m',canonical_nav_input='nearFLU/50, internal only')
+def main():
+ safe_idle();configure_runtime();out=ROOT/'artifacts/carla-direct-rms-paired512';assert json.loads((out/'preflight.json').read_text())['passed'];d=json.loads((ROOT/'artifacts/carla-lateral-scale512/design.json').read_text());seq=d['selection'];scales=json.loads((ROOT/'artifacts/residual-representation-paired128/scale_calibration.json').read_text())['scales_m'];cfg=json.loads((ROOT/'artifacts/structural-prototypes-light512/config.json').read_text());cfg.update(batch_size=12,experiment='deterministic25-action-objective');pl.seed_everything(2060);init=InteractionFlow(False);init.set_scales(scales);weights={k:v.clone() for k,v in init.state_dict().items()};del init;NavData.enabled=True;d['cells']=['2060-normalized','2061-normalized'];(out/'design.json').write_text(json.dumps(d));traces={}
+ for arm,seed,on in [('2060-normalized',2060,True),('2061-normalized',2061,True)]:
+  pl.seed_everything(seed);init=InteractionFlow(False);init.set_scales(scales);weights={k:v.clone() for k,v in init.state_dict().items()};del init
+  safe_idle();folder=out/arm;folder.mkdir();pl.seed_everything(seed);task=InteractionTask(cfg,scales,hashlib.sha256(json.dumps(seq).encode()).hexdigest(),seed,on);task.model.load_state_dict(weights,strict=False)
+  with torch.no_grad():
+   task.model.state[0].weight[:,5]/=50
+   if on:task.model.state[0].weight[:,19]=0
+  torch.cuda.reset_peak_memory_stats();start=time.perf_counter();tr=pl.Trainer(accelerator='gpu',devices=1,precision='bf16-mixed',max_steps=512,max_epochs=-1,max_time={'minutes':5},callbacks=[Status(folder),ModelCheckpoint(dirpath=str(folder),filename='latest',enable_version_counter=False,save_top_k=1,every_n_train_steps=128,save_on_train_epoch_end=False),EpochLatest(folder/'latest.ckpt'),ModelCheckpoint(dirpath=str(folder),filename='best',enable_version_counter=False,monitor='validation_position_diagnostic_m',mode='min',save_top_k=1,save_on_train_epoch_end=False)],plugins=[VerifiedCheckpointIO()],logger=TensorBoardLogger(str(ROOT/'logs/tensorboard/v1'),name='carla-direct-rms-paired512',version=arm),num_sanity_val_steps=0,val_check_interval=256,check_val_every_n_epoch=None,gradient_clip_val=1,enable_progress_bar=False,enable_model_summary=False);tr.fit(task,datamodule=NavDM(seq,d['devs']['startstop'][::56]));assert tr.global_step==512;traces[arm]=task.trace;(folder/'train_complete.json').write_text(json.dumps({'wall_s':time.perf_counter()-start,'steps':512,'peak_gib':torch.cuda.max_memory_allocated()/2**30,'rng':task.trace}));task.model.cuda().eval();ref=copy.deepcopy(task.model.teacher).cuda().eval();evaluate.__wrapped__.__globals__['DiskSamples']=NavData;result={k:evaluate(task.model,names,ref,True) for k,names in d['devs'].items()};(out/f'{arm}-eval.json').write_text(json.dumps(result));del task,tr,ref;gc.collect();torch.cuda.empty_cache();print('ARM_DONE',arm,flush=True)
+ assert all(traces[f'{seed}-normalized']==json.loads((ROOT/f'artifacts/carla-directstate-paired512/{seed}-direct/train_complete.json').read_text())['rng'] for seed in [2060,2061]);(out/'complete.json').write_text(json.dumps({'done':True,'first3_rng_equal':True}));print('COMPLETE')
+if __name__=='__main__':main()
+

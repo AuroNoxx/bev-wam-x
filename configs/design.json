@@ -1,0 +1,126 @@
+{
+  "status": "stage1_v2_completed_partial_improvement_braking_regression_no_stage2",
+  "simulator": {
+    "name": "CARLA",
+    "candidate_version": "1.0",
+    "platform": "Windows",
+    "compatibility_verified": true,
+    "renderer": "DX12",
+    "verification_scope": "DX12 GUI + Town12 single vehicle + RGB/semantic/lidar 120s at20Hz; OCC equivalence and learned closed loop pending",
+    "upgrade_candidate": "1.0",
+    "upgrade_verified": true,
+    "previous_version_retained": "0.9.15"
+  },
+  "scope": {
+    "lanes": [
+      2,
+      3
+    ],
+    "weather": "day_dry",
+    "ramps": false,
+    "behaviors": [
+      "cruise",
+      "accelerate",
+      "decelerate",
+      "follow",
+      "lane_change",
+      "overtake",
+      "safe_return",
+      "abort_lane_change",
+      "emergency_brake"
+    ]
+  },
+  "observation": {
+    "kind": "historical_occ_ego_state_route_and_lane_geometry",
+    "rgb_model_input": false,
+    "privileged_actor_state_at_inference": true,
+    "history_frames": 4,
+    "history_seconds_pilot": 0.6,
+    "simulation_oracle_experiment": true
+  },
+  "representation": {
+    "kind": "occupancy_core_no_separate_bev_head",
+    "frame": "ego_x_forward_y_left_z_up",
+    "carla_y_axis_conversion_required": true,
+    "final_extent": "pending_visibility_stopping_distance_and_memory_validation",
+    "pilot_shape_zyx": [
+      20,
+      64,
+      160
+    ],
+    "pilot_xy_range_m": [
+      -25.6,
+      25.6
+    ],
+    "unknown_mask_required": true,
+    "source_unfilled_is_free": false,
+    "lane_geometry_required": true
+  },
+  "planning": {
+    "method": "conditional_flow_matching",
+    "candidate_count": 8,
+    "horizon_s": 5.0,
+    "waypoint_dt_s": 0.2,
+    "replan_hz_target": 5,
+    "trajectory_fields": [
+      "t",
+      "x",
+      "y",
+      "yaw",
+      "speed"
+    ],
+    "world_model_condition": "history_occ_ego_state_controller_simulated_candidate_trajectory",
+    "latency_verified": false,
+    "future_occ_reference": "fixed_current_ego_frame_with_coverage_mask"
+  },
+  "control": {
+    "lateral": "pure_pursuit",
+    "longitudinal": "speed_pid",
+    "control_hz_target": 20,
+    "tested": false,
+    "feasibility_rollout": "calibrated_bicycle_model_with_same_tracking_controllers"
+  },
+  "training": {
+    "framework": "pytorch-lightning==2.6.6",
+    "runtime_config": "configs/lightning.json",
+    "status_file": "artifacts/lightning/flow/status.json",
+    "epochs": "min15_max60_patience10",
+    "batch_size": 8,
+    "config_source": "configs/train_v1.json",
+    "collect_and_train_concurrently": false,
+    "cloud_teacher_enabled": false,
+    "visual_training": false
+  },
+  "datasets": {
+    "self_collected": "stopped_excluded_deletion_blocked_by_policy",
+    "benchmark": "Bench2Drive-V0.0.4_two_highway_cutin_routes_for_timing_only",
+    "additional_download": "UniOcc_Carla-10Hz-mini_Town07_160_frames_not_timed"
+  },
+  "benchmark": {
+    "report": "docs/SPEED_REPORT.md",
+    "config_source": "configs/train_v1.json",
+    "batch_size": 8,
+    "timed_updates_per_module": 100,
+    "full_training_started": true,
+    "target_representation_above": "matches_train_v1_grid",
+    "applies_to_current_architecture": true
+  },
+  "architecture_version": "occ-trajectory-controller-v1",
+  "dataset_plan": {
+    "source": "Bench2Drive-V0.0.4",
+    "routes_target": 60,
+    "train_val_test_target": [
+      42,
+      9,
+      9
+    ],
+    "download_actual_bytes": 19426372751,
+    "download_state": "60_routes_downloaded_and_prepared",
+    "actual_windows_train_validation_test": [
+      5296,
+      1124,
+      2485
+    ],
+    "split_group": "map_disjoint_Town12_train_Town13_validation_other_maps_test"
+  }
+}

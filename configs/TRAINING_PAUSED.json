@@ -1,0 +1,18 @@
+{
+  "paused": false,
+  "reason": "User explicitly requested starting training: \u5148\u8bad\u7ec3\u5427",
+  "observed_training_processes": 0,
+  "previous_launcher_state": "completed exit_code 0",
+  "preservation_manifest": "artifacts\\diagnostics\\20261115-contract\\preserved-files.json",
+  "next_training_contract": "data/occ_v3/manifest.json",
+  "old_weight_initialization_allowed": false,
+  "old_weight_deletion_status": "user authorized; execution rejected by policy; all 15 targets retained",
+  "authorized_at": "2026-11-15T03:35:39.581926+08:00",
+  "authorized_run": "artifacts/lightning/flow-v3",
+  "authorized_mode": "flow",
+  "initialization": "fresh_random_no_old_weights",
+  "manifest_sha256": "96549c6bf1d4d131138933e5aa9ee64b250eae7aba19ed329e8deec1c7aa8b1d",
+  "training_pid": null,
+  "last_run_status": "completed_max_epochs_60",
+  "last_run": "artifacts/lightning/flow-v3"
+}

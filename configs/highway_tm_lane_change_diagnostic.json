@@ -1,0 +1,67 @@
+{
+  "purpose": "Follow-up diagnostic after high-speed lane-change nonexecution; not qualification",
+  "candidate": "CARLA 1.0 Traffic Manager plus privileged state gap-checking maneuver supervisor",
+  "map": "Town12",
+  "road": 1157,
+  "dt": 0.05,
+  "seed": 20261115,
+  "cases": [
+    {
+      "name": "lane_change_diagnostic_40",
+      "maneuver": "lane_change",
+      "speed": 40,
+      "lead_speed": 40,
+      "shift": 0,
+      "seconds": 30,
+      "trace_tm_actions": true
+    },
+    {
+      "name": "lane_change_diagnostic_50",
+      "maneuver": "lane_change",
+      "speed": 50,
+      "lead_speed": 50,
+      "shift": 0,
+      "seconds": 30,
+      "trace_tm_actions": true
+    },
+    {
+      "name": "lane_change_diagnostic_30",
+      "maneuver": "lane_change",
+      "speed": 30,
+      "lead_speed": 30,
+      "shift": 0,
+      "seconds": 30,
+      "trace_tm_actions": true
+    }
+  ],
+  "decision_rules": {
+    "desired_following_time_s": 1.8,
+    "minimum_following_distance_m": 10,
+    "lane_change_front_headway_s": 1.5,
+    "lane_change_rear_headway_s": 1.5,
+    "lane_change_min_gap_m": 12,
+    "lane_change_min_ttc_s": 5,
+    "lane_change_request_after_s": 12,
+    "overtake_return_clearance_m": 45,
+    "lane_settle_s": 2
+  },
+  "screening_gates_not_certification": {
+    "collision_events": 0,
+    "off_driving_road_frames": 0,
+    "solid_marking_crossings": 0,
+    "min_ttc_when_closing_s": 2,
+    "min_headway_at_speed_above_10kmh_s": 1,
+    "following_speed_match_seconds_abs_error_below_5kmh": 5,
+    "lane_change_completed_and_settled": true,
+    "overtake_requires_return_and_clearance": true,
+    "blocked_case_must_reject": true
+  },
+  "limitations": [
+    "7 cases on one road are an initial screen, not statistical expert qualification",
+    "No 120 km/h or emergency cut-in coverage",
+    "Gap/TTC use road-s and footprint extent approximations",
+    "Comfort metrics require controller/vehicle calibration",
+    "No observed OCC collected; privileged state never substitutes for sensor input",
+    "Force lane change ignores collisions internally; external precheck is not continuous safety assurance"
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "experiment": "joint-occ-v1-small-fit-not-driving-acceptance",
+  "manifest": "data/occ_v3/manifest.json",
+  "selection": "artifacts/joint-occ-v1/audit/selection.json",
+  "variants": ["original_flow", "no_occ", "temporal_flow", "auxiliary", "fusion"],
+  "seeds": [1701, 1702],
+  "batch_size": 8,
+  "max_steps": 256,
+  "learning_rate": 0.0005,
+  "weight_decay": 0.01,
+  "precision": "bf16-mixed",
+  "width": 64,
+  "future_seconds": [1, 2],
+  "ema_momentum": 0.99,
+  "aux_weights": {"latent": 0.1, "variance": 0.1, "semantic": 0.1},
+  "candidates": 8,
+  "ode_steps": 16,
+  "checkpoint_steps": 32,
+  "validation_every_epochs": 8,
+  "best_monitor": "validation_meanADE_m",
+  "best_mode": "min",
+  "best_min_delta": 0.0,
+  "objective": {
+    "auxiliary_min_t": 0.5,
+    "position_scale_m": 5.0,
+    "velocity_scale_mps": 2.0,
+    "weights": {"fm": 1.0, "position": 0.2, "kinematics": 0.1, "unit_heading": 0.02, "negative_speed": 0.02}
+  },
+  "acceptance": {
+    "engineering": "finite gradients; actor independent of future labels; causal history; frozen EMA teacher; resume continuity and failed save preservation",
+    "fit_probe": "report before/after true noise-to-trajectory sampling on train including stop/deceleration; do not equate falling bridge loss to successful driving",
+    "next_stage_only_if": "relative to temporal_flow on both seeds: deceleration meanADE improves >=10%, overall meanADE regresses <=5%, stationary forward bias does not increase; noncollapse probes pass",
+    "closed_loop": "not enabled by this fit probe; requires matched scenarios/controller, held-out scene seeds, collisions/lane departures/completion/progress/comfort/takeovers/latency and separate sim/wall clocks"
+  },
+  "limitations": "Diagnostic enriched 64+64 window subsets, overlapping supports, low speeds, source OCC causality not fully certified. Same updates is not same FLOPs. Formal full split multi-seed experiment remains gated."
+}

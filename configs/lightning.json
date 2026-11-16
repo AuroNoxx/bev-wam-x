@@ -1,0 +1,11 @@
+{
+  "framework": "pytorch-lightning==2.6.6",
+  "precision": "bf16-mixed",
+  "fused_adamw": true,
+  "channels_last": true,
+  "compile": false,
+  "workers": 2,
+  "conv_autotune": false,
+  "log_every_n_steps": 10,
+  "note": "Selected after real 100-step Lightning benchmarks: 164.72 vs baseline 135.59 samples/s. Full compile measured about 3 s/step and is disabled. Original model/data contract stays in train_v1.json."
+}

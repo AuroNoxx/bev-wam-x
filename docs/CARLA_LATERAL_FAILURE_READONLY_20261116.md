@@ -1,0 +1,12 @@
+# Read-only lateral failure audit
+Sources: carla-startstop-mixture-decel25 fullrecords/frames and mixturetrainingselection1049unique. No newinference,simulation,trainingorcontrollerchanges.
+
+58validpolicyplans allselectedlookaheadpointsFLUypositive(left), all58nextsteersnegative(CARLAleft). Meanselectedy+.13154m,meansteer-.073738. Recomputedtrackingformulaagreesmaxerror6.82e-9. At5.8s projectedpose ininitialegotangentforward17.491m,left1.799m,headingleft8.722deg. Mapnearestwaypointlane-3->-2consistentwithcrossing; initialtangentnotexactlanecenterline, lanegeometrynotindependentlyrequeried.
+
+At0slookahead(x4.077,y.392),steer-.218,near-mapgoaly~0. At5.7slookahead(x4.228,y.075),steer-.0392,near-mapgoaly=-2.433(rightcorrection). Model0.2s lateralpredictionsstay+.041..+.049m duringrun. Training1049unique0.2slabelmean3.32e-6m,absP95.000221m;0.6sP95.000373;5sP95.00554. Labelsessentiallystraight, notlearnedrequiredlanechange. Persistentlocalpredictionbias accumulatesunderrecedinghorizon control.
+
+Thecontrollerfollowstheleftcandidatewithcorrectsign; cannotclaimtrackerperfectbutnotobvioussignfliporindependentuncommandedsteer. Ituseslookaheaddistance>=4m andspeedpoint.6s; trackingcalibrationisnotcertified. Candidatebiascancomefromfixednoise2301 residualor learnedconditionalbias orweakperceptualcorrection. Allsamefixednoise,noalternative-noisecounterfactualavailable; don'tcalllucky/unlucky. OnlineOCCnotemptybut99.28%unknown,onlyhitsemantics; nooracleleadenteredactor.
+
+Zero-navigationstatewasdeliberatefair-sourcecontract,notmissing-filebug. Itremovesexplicitroute/lanecenter correction whiletrainingcontainsalmostnocross-trackrecovery. Observedmapnear-goalwouldrequestrightcorrection,butwasnotgiven. Thus closed-looprecoverycoverage/conditioning isplausiblemissingfactor; cannot provejustaddingnavigationwillfixnoisebias.
+
+Minimalnextdiagnosticproposal(notexecuted): replayidenticalrecordedcausalhistorieswithpredeclaredmultipleGaussianseedsandzero-noise diagnostic, samecheckpoint/no updates, measurelateralmean/spread andt0/fullcandidateconsistency, comparecorrectnear-goalonlyiftrainingcontractsupports it(do notinjectuntrainedfieldsandcallimprovement). Separately verifytrackerwithsyntheticstraightpathoffline beforephysicalsim. Dependingevidence,designexplicitnear-goal+smallcross-trackrecoverydatacontractwithmatchedtraining; nofar-commandfabricationorposthoccherrypickedseed. Keepguards,don'tzerolateraloutputorrelaxlaneruletoforcebrakingcoverage. Braking remains untested.

@@ -1,0 +1,21 @@
+{
+  "version": "occ-flow-v1",
+  "seed": 20261114,
+  "grid": {"shape_zyx": [20, 64, 160], "origin_flu_m": [-25.6, -25.6, -5.0], "voxel_xyz_m": [0.8, 0.8, 0.4]},
+  "history_offsets": [-6, -4, -2, 0],
+  "future_occ_offsets": [10, 20, 30, 40, 50],
+  "frame_dt_s": 0.1,
+  "trajectory_points": 25,
+  "trajectory_dt_s": 0.2,
+  "trajectory_scale": [50, 10, 1, 1, 30],
+  "state_dim": 20,
+  "classes": ["source_unfilled_not_verified_free", "road_ground", "vegetation_terrain", "static_other", "vehicle_dynamic", "pedestrian_rider", "road_line", "sidewalk_barrier"],
+  "unknown_label": 255,
+  "flow": {"batch_size": 8, "lr": 0.0002, "weight_decay": 0.01, "max_epochs": 60, "min_epochs": 15, "patience": 10, "min_delta": 0.0001, "ode_steps": 16, "candidates": 8},
+  "world": {"batch_size": 8, "lr": 0.0001, "weight_decay": 0.01, "max_epochs": 60, "min_epochs": 15, "patience": 10, "min_delta": 0.0001},
+  "checkpoint_steps": 50,
+  "checkpoint_seconds": 120,
+  "precision": "bf16_autocast_fp32_master",
+  "workers": 0,
+  "notes": "Fresh initialization. Loss plateau stopping is not a driving acceptance test. Stage 1 is offline imitation, not autonomous deployment."
+}
