@@ -1,4 +1,10 @@
-# Current architecture and status (2026-11-17)
+# Completed experiment: isolated native v2
+
+Native v1 completed20epochs and its final weights are preserved. Native v2 completed20epochs and final paired checkpoint audit: 12frozen Qwen layers,256historical scene tokens,AdaLN-Zero Action conditioning,zero-gated World-to-Action and deterministic residual World. See [v2 implementation/run record](OCC_QWEN_NATIVE_V2_20261117.md) and [next-stage plan](NEXT_STAGE_ARCHITECTURE_PLAN.md). Active status is `artifacts/occ-qwen-native-v2-training/status.json`. No future3D OCC decoder or OccWAM second stage has been added. The v1 and older classical records below are retained for history, not silently applied to v2.
+
+Final results: [v2 final audit](OCC_QWEN_NATIVE_V2_FINAL_AUDIT_20261117.md). Best ADE3.171468m; not established as closed-loop safe. No further trainer started.
+
+# Native v1 architecture record (2026-11-17)
 
 The current authorized experiment supersedes the classical-only decision of 2026-11-15. The classical pipeline remains preserved as a historical baseline, not the current training architecture.
 
@@ -7,7 +13,7 @@ The current authorized experiment supersedes the classical-only decision of 2026
 - Input: four historical 3D OCC grids, `[B,4,20,128,128]`, native 0.4 m voxels, XY `[-25.6,25.6)` m and Z `[-5,3)` m. No preprocessing downsample-then-enlarge or invented forward coverage. Height is encoded into CNN channels; learned feature compression produces a 4x4 spatial token lattice, not a future 3D voxel output.
 - Historical frames align to current ego coordinates; out-of-support cells remain unknown. Unfilled is not asserted to be verified free. Future observations are training labels only, not actor inputs. This does not certify upstream label-generation causality.
 - World output is **latent only**. Future 3D OCC decoding and OccWAM scene-to-ego second-stage correction are **not implemented and not part of the current authorized experiment**.
-- Formal training is authorized and running on the existing computer, targeting 20 epochs. Do not start a duplicate run or use older pause notes to interrupt it. Main runtime entry: `scripts/train_occ_qwen_native_optimized.py`; configuration: `configs/occ-qwen-native.json`; live status: `artifacts/occ-qwen-native-training/status.json`.
+- Native v1 completed all20 epochs atstep13240 on2026-11-17; see [final audit](OCC_QWEN_NATIVE_V1_FINAL_AUDIT_20261117.md). Isolated v2 implementation is now authorized under [the next-stage plan](NEXT_STAGE_ARCHITECTURE_PLAN.md). Do not duplicate any active run or overwrite v1weights. Main runtime entry: `scripts/train_occ_qwen_native_optimized.py`; configuration: `configs/occ-qwen-native.json`; live status: `artifacts/occ-qwen-native-training/status.json`.
 - Active execution options: native aligned cache and channels_last, workers=0. Fused AdamW was excluded after its numerical gate. Full best/latest checkpoints retain optimizer, scheduler, EMA, RNG and exact loader state. Training/validation progress is not proof of CARLA closed-loop reliability.
 
 Implementation details, authorization chronology and verification: [OCC_QWEN_NATIVE_INPUT_20261116.md](OCC_QWEN_NATIVE_INPUT_20261116.md). Initial joint-flow design: [OCC_QWEN_JOINT_FLOW_20261116.md](OCC_QWEN_JOINT_FLOW_20261116.md). Preserved classical baseline: [OCC_CLASSICAL_PLAN_20261115.md](OCC_CLASSICAL_PLAN_20261115.md).

@@ -1,0 +1,20 @@
+{
+ "version":"native-occ-qwen-v2-12layer-64tokens-residual-world",
+ "formal_training_paused":false,
+ "training_authorization":"2026-11-17 user authorized completing v1, auditing, then isolated v2 implementation and training with matched validation without another approval",
+ "manifest":"data/occ_v3/manifest.json",
+ "cache_index":"data/native_occ_aligned_cache/index-2f99ef278dac8d1eb489d84fd641b84f7415e7a96d409e2f264cdaccf5d9c82a.json",
+ "model_entry":"occ_qwen_native_v2.NativeOccQwenV2",
+ "input_shape_tzyx":[4,20,128,128], "voxel_xyz_m":[0.4,0.4,0.4],
+ "bounds_xyz_m":[[-25.6,25.6],[-25.6,25.6],[-5,3]],
+ "history_offsets":[-6,-4,-2,0],"future_label_offsets":[10,20],"frame_dt_s":0.1,
+ "trajectory_points":25,"trajectory_dt_s":0.2,"scene_tokens_per_frame":64,"history_scene_tokens":256,
+ "qwen_layers":12,"qwen_lora":false,"world_output":"deterministic residual latent flow from zero; no OCC decoder",
+ "occ_decoder_enabled":false,"scene_to_ego_refinement_enabled":false,
+ "batch_size":8,"workers":0,"seed":71,"max_epochs":20,"lr":0.0001,"encoder_lr":0.0002,"ema_momentum":0.99,
+ "sample_steps":8,"channels_last":true,"fused_adamw":false,
+ "accel_weight":0.001,"jerk_weight":0.001,
+ "validation_noise":"independent per-batch generator seed1907+batch_idx; requires common-protocol v1 reevaluation",
+ "checkpoint_policy":"full latest every100steps and epoch end; best single-candidate ADE; exact loader and full optimizer/scheduler/EMA/RNG",
+ "source_causality_certified":false
+}
