@@ -1,0 +1,9 @@
+{
+  "seed": 8153, "train_windows": 640, "epochs": 12,
+  "microbatch": 1, "accumulate_grad_batches": 8, "effective_batch": 8,
+  "learning_rate": 0.001, "projection_channels": 48,
+  "base_phase": "subset2000", "base_step": 750,
+  "selection": "all measured v0<=3 km/h, remaining slots drawn round robin from measured 20 km/h bins using training split only",
+  "selection_checkpoint": "latest fixed epoch; best by validation ADE is retained separately",
+  "precision": "BF16 autocast / FP32 master, flow and kinematics FP32"
+}

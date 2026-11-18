@@ -1,0 +1,12 @@
+{
+  "fit": {"Town01": 8, "Town04": 8},
+  "acceptance": {"Town02": 6, "Town10HD_Opt": 6},
+  "gap_m": [14, 17, 20],
+  "ego_cruise_mps": [1.8, 2.25],
+  "branches": {"hold": [0, 31], "slow": [1.15, 34], "fast": [2.5, 27]},
+  "seed": 1921, "epochs": 16, "lr": 0.00035,
+  "microbatch": 1, "accumulate": 8, "effective_batch": 8,
+  "threshold_m": 0.3,
+  "selection": "fixed final epoch. Fine-tune existing 700-update readout only. Each epoch includes all 48 new training windows and 48 original fit windows.",
+  "gate": "precision and recall each >=0.75 and MAE below zero on new acceptance roads. Old 12 pairs and internal 48 windows reported separately."
+}

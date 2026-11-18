@@ -1,0 +1,136 @@
+{
+  "run_name": "v5-qwen-drive-world-lightweight",
+  "seed": 71,
+  "model_dir": "models/v5-qwen-drive-world/Qwen-Drive-1.0-4B",
+  "official_source": "runtime/qwen-drive-official",
+  "precision": "bf16_autocast_fp32_master",
+  "attention_backend": "math",
+  "quantization": null,
+  "requested_layers": 32,
+  "compatible_full_layers": 32,
+  "layer_policy": "full_with_gradient_checkpointing",
+  "gradient_checkpointing": true,
+  "acceleration": {
+    "fla_linear_attention": true,
+    "fla_causal_conv1d": true,
+    "fla_gated_norm": true,
+    "math_query_chunk": 256
+  },
+  "batch_size": 4,
+  "accumulate_grad_batches": 2,
+  "effective_batch_size": 8,
+  "lora": {
+    "r": 16,
+    "alpha": 32,
+    "dropout": 0.05,
+    "target_modules": [
+      "q_proj",
+      "k_proj",
+      "v_proj",
+      "o_proj"
+    ],
+    "layer_start": 24
+  },
+  "optimizer": {
+    "name": "AdamW",
+    "weight_decay": 0.01,
+    "foreach": true,
+    "fused": false,
+    "clip_norm": 1.0
+  },
+  "lr": {
+    "lora": 5E-05,
+    "world": 0.0002,
+    "planner": 0.0001
+  },
+  "warmup_fraction": 0.1,
+  "max_epochs": 5,
+  "checkpoint_every_steps": 100,
+  "trajectory": {
+    "steps": 50,
+    "dt": 0.1,
+    "ode_steps": 10,
+    "ax_min": -8.0,
+    "ax_max": 4.0,
+    "ay_max": 3.5,
+    "v_floor": 5.0,
+    "v_max": 35.0
+  },
+  "grid": {
+    "x_min": -16.0,
+    "x_max": 112.0,
+    "y_min": -19.2,
+    "y_max": 19.2,
+    "dx": 1.0,
+    "dy": 0.3,
+    "height": 128,
+    "width": 128,
+    "times": [
+      1.0,
+      2.0,
+      3.0
+    ],
+    "layout": "B,time,Y,X"
+  },
+  "loss_weights": {
+    "reason": 0.5,
+    "fm": 1.0,
+    "kin": 0.2,
+    "world": 0.5
+  },
+  "data": {
+    "manifest": "data/v5-qwen-drive-world/manifest.json",
+    "bench2drive_fraction": 0.7,
+    "highway_fraction": 0.3,
+    "speed_edges_kmh": [
+      0,
+      20,
+      40,
+      60,
+      80,
+      100,
+      120
+    ],
+    "num_workers": 0
+  },
+  "grpo": {
+    "group_size": 8,
+    "clip_epsilon": 0.2,
+    "advantage_epsilon": 1E-06,
+    "world_frozen": true,
+    "policy_density": "not_yet_selected_for_continuous_flow"
+  },
+  "reward": {
+    "progress": 1.0,
+    "collision": 10.0,
+    "ttc": 5.0,
+    "dynamics": 2.0,
+    "lane": 1.0
+  },
+  "control": {
+    "planning_hz": 5,
+    "control_hz": 20,
+    "candidates": 4,
+    "collision_threshold": 0.2,
+    "guard_speed_max": 35.0,
+    "guard_speed_min": -0.05,
+    "guard_lateral_acceleration": 4.5,
+    "guard_gap_m": 2.0,
+    "guard_ttc_s": 1.2
+  },
+  "world_architecture": "bev2d",
+  "visual_tokens": {
+    "extra_pool": 2,
+    "limit": 850,
+    "history_views": [
+      "front"
+    ],
+    "current_views": "all_available"
+  },
+  "epoch_estimates": [
+    3,
+    5
+  ],
+  "cudnn_benchmark": false,
+  "frozen_prefix_layers": 24
+}
