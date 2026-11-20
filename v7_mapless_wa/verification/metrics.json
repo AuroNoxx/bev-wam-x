@@ -1,0 +1,147 @@
+{
+  "sim": {
+    "server": "0.10.0",
+    "client": "0.10.0",
+    "maps": [
+      "/Game/Carla/Maps/Mine_01",
+      "/Game/Carla/Maps/Town10HD_Opt"
+    ],
+    "quality": "Epic",
+    "tags": {
+      "Poles": 6,
+      "Walls": 4,
+      "Fences": 5,
+      "GuardRail": 28,
+      "TrafficSigns": 8,
+      "RoadLines": 24,
+      "Sidewalks": 2
+    }
+  },
+  "episodes": [
+    {
+      "retained_yaw_range_deg": 39.89765367359701,
+      "scenario": "curve",
+      "weather": "ClearSunset",
+      "npc_count": 9,
+      "perturb_m": 0.0,
+      "episode_group": "Carla/Maps/Town10HD_Opt/9/1/43",
+      "planned_peak_kappa_first_46m": 0.10667037307057217,
+      "first_choices_m": 10,
+      "driven_m": 89.02446081250088,
+      "sim_ticks": 327
+    },
+    {
+      "retained_yaw_range_deg": 7.436866815985283,
+      "scenario": "fork",
+      "weather": "CloudyNoon",
+      "npc_count": 9,
+      "perturb_m": 0.0,
+      "episode_group": "Carla/Maps/Town10HD_Opt/22/1/95",
+      "planned_peak_kappa_first_46m": 0.07443801306321296,
+      "first_choices_m": 16,
+      "driven_m": 87.17455606860356,
+      "sim_ticks": 470
+    },
+    {
+      "retained_yaw_range_deg": 0.025244372947696547,
+      "scenario": "pole",
+      "weather": "WetCloudyNoon",
+      "npc_count": 9,
+      "perturb_m": 0.0,
+      "episode_group": "Carla/Maps/Town10HD_Opt/20/4/51",
+      "planned_peak_kappa_first_46m": 0.0738788197168514,
+      "first_choices_m": 8,
+      "driven_m": 62.76058734847118,
+      "sim_ticks": 631
+    },
+    {
+      "retained_yaw_range_deg": 1.2482616766141064,
+      "scenario": "straight",
+      "weather": "ClearNoon",
+      "npc_count": 9,
+      "perturb_m": 0.42,
+      "episode_group": "Carla/Maps/Town10HD_Opt/20/5/50",
+      "planned_peak_kappa_first_46m": 4.771665793601443e-07,
+      "first_choices_m": 48,
+      "driven_m": 66.70485595832389,
+      "sim_ticks": 210
+    }
+  ],
+  "count": 100,
+  "pairs_1s": 20,
+  "nonempty_occ_frames": [
+    45,
+    35,
+    25,
+    31,
+    50
+  ],
+  "coverage": {
+    "front_0_6": {
+      "visible": 18,
+      "cells": 48
+    },
+    "front_beyond_bumper": {
+      "visible": 18,
+      "cells": 24
+    },
+    "left_adjacent": {
+      "visible": 54,
+      "cells": 72
+    },
+    "right_adjacent": {
+      "visible": 54,
+      "cells": 72
+    }
+  },
+  "alignment": {
+    "straight_boundary_cross_section": {
+      "n": 41,
+      "p95": 0.173,
+      "below_one": 1.0
+    },
+    "semantic_static_to_low_lidar": {
+      "n": 10081,
+      "p95": 0.0,
+      "below_one": 1.0
+    },
+    "live_semantic_to_survey_static": {
+      "n": 10081,
+      "p95": 0.0,
+      "below_one": 0.99454419204444
+    },
+    "all_paint_to_ego_lane_diagnostic": {
+      "n": 5712,
+      "p95": 20.396,
+      "below_one": 0.24037114845938376
+    },
+    "overlap_rgb_paint": {
+      "n": 3263,
+      "p95": 2.828,
+      "below_one": 0.5822862396567576
+    },
+    "path_raster_quantization": {
+      "n": 4000,
+      "p95": 0.565,
+      "below_one": 1.0
+    },
+    "path_arc_error_m": {
+      "n": 4000,
+      "p95": 0.0,
+      "below_one": 1.0
+    }
+  },
+  "straight_boundary_cross_sections_tested": 250,
+  "mean_bytes": 548220.91,
+  "size_40k_gib": 20.42282037436962,
+  "gpu_samples": 69,
+  "gpu_dedicated_peak_gib": 8.250938415527344,
+  "gpu_dedicated_median_gib": 7.566440582275391,
+  "wall_sim_fps": 22.34337877684001,
+  "retained_fps": 12.590916014217193,
+  "save_and_label_fps": 10.64764310480961,
+  "four_short_episodes_fps": 1.33761683186798,
+  "offline_s": 1.4495159000070998,
+  "hours_40k_stream": 1.043527755554856,
+  "hours_40k_short": 8.306647200001558
+}
