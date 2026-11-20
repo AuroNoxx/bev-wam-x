@@ -4,7 +4,7 @@ from torch import nn
 from torch.nn import functional as F
 from torchvision.models import resnet18, resnet34
 
-from v5_qwen_drive_world.runtime import math_attention
+from torch.nn.attention import SDPBackend, sdpa_kernel
 
 
 class NativeBatchNorm(nn.BatchNorm2d):
@@ -203,7 +203,7 @@ class FastDriver(nn.Module):
         cond=torch.cat([scaled[:,:1] if self.spatial else scaled,command[:,:3],command[:,3:4]/120],1)
         tokens=torch.cat((self.condition(cond)[:,None],image.flatten(2).transpose(1,2),
                           x.flatten(2).transpose(1,2)),1)+self.position
-        with math_attention():
+        with sdpa_kernel(SDPBackend.MATH):
             for layer in self.fusion:
                 tokens=layer(tokens)
         tokens=self.norm(tokens)

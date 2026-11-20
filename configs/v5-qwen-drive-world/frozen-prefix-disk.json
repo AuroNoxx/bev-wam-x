@@ -1,9 +1,0 @@
-{
-  "cache_root": "data/v5-qwen-drive-world/frozen-prefix-cache",
-  "ram_GiB": 3,
-  "disk_budget_GiB": 128,
-  "storage": "torch.save original tensors, no quantization",
-  "cache": "frozen ViT and layers0:24 only; six real prefix KV groups for actor",
-  "separate_roles": ["actor", "future_teacher"],
-  "population": "lazy, on the first actual visit; no separate training or preprocessing run"
-}

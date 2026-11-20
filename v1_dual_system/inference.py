@@ -10,13 +10,38 @@ import time
 import numpy as np
 import torch
 
-from v5_qwen_drive_world.objectives import footprint_collision
+from torch.nn import functional as F
 from .navigation import model_navigation_state
 from .legacy_controller import TimedLaneCrossing
 from .deployment import GraphDriver, fold_batch_norm, load_driver
 
 RGB_BYTES=6*360*640
 SIZE=RGB_BYTES+3*128*128
+
+
+def footprint_collision(probabilities, trajectory, dimensions, support, dt=.1):
+    """Return sampled occupied risk and coverage; unknown is never zero-padded free.
+
+    probabilities:[B,3,Y,X], trajectory:[B,T,7], dimensions:[B,2] length/width.
+    Geometry is fixed to the requested corridor, all computation in FP32.
+    """
+    with torch.autocast(device_type=trajectory.device.type,enabled=False):
+        p=probabilities.float(); tr=trajectory.float()
+        indices=torch.tensor([round(h/dt)-1 for h in (1,2,3)],device=tr.device)
+        poses=tr[:,indices]
+        pattern=tr.new_tensor([[.5,0],[0,0],[-.5,0],[.5,.5],[.5,-.5],[-.5,.5],[-.5,-.5]])
+        offsets=dimensions.float()[:,None,:]*pattern[None]
+        c=poses[...,2].cos()[...,None]; s=poses[...,2].sin()[...,None]
+        x=poses[...,0,None]+c*offsets[:,None,:,0]-s*offsets[:,None,:,1]
+        y=poses[...,1,None]+s*offsets[:,None,:,0]+c*offsets[:,None,:,1]
+        grid=torch.stack((2*(x+16)/128-1,2*(y+19.2)/38.4-1),-1)
+        # Pixel-center support, plus physical boundaries; bilinear edge padding
+        # contributes zero support and cannot turn absent coverage into free.
+        sampled=F.grid_sample(p.flatten(0,1)[:,None],grid.flatten(0,1)[:,None],align_corners=False).reshape(len(p),3,7)
+        known=F.grid_sample(support.float().flatten(0,1)[:,None],grid.flatten(0,1)[:,None],align_corners=False).reshape(len(p),3,7)
+        valid=(known >= .999)&(x >= -16)&(x <112)&(y >=-19.2)&(y <19.2)
+        sampled=torch.where(valid,sampled,torch.full_like(sampled,float('nan')))
+        return sampled.amax(-1).sum(-1),valid.all(-1).all(-1)
 
 
 def main(name,ckpt,chase=False):

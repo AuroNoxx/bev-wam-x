@@ -13,7 +13,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import CSVLogger
 from torchdata.stateful_dataloader import StatefulDataLoader
 
-from v5_qwen_drive_world.checkpoint_io import VerifiedCheckpointIO
+from .checkpoint_io import VerifiedCheckpointIO
 from .dataset import DaggerMix, FastData, NavigationData, SpatialData, FocusSampler, ForkSampler
 from .legacy_fast_model import FastDriver, losses
 from .sensors import ROOT, LOG, DATA, CAL_ID, write_json

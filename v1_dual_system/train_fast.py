@@ -12,8 +12,8 @@ from pytorch_lightning.callbacks import ModelCheckpoint,Callback
 from pytorch_lightning.loggers import CSVLogger
 from torchdata.stateful_dataloader import StatefulDataLoader
 
-from v5_qwen_drive_world.checkpoint_io import VerifiedCheckpointIO
-from v5_qwen_drive_world.runtime import math_attention
+from .checkpoint_io import VerifiedCheckpointIO
+from torch.nn.attention import SDPBackend, sdpa_kernel
 from .fast_model import UnifiedDriver
 from .unified_dataset import UnifiedData,BalancedBatches
 from .unified_data import ART
@@ -55,7 +55,7 @@ class DriverTask(pl.LightningModule):
         with torch.autocast("cuda",enabled=False):
             projected,visible=self.driver.ipm.sample(rgb,plane)
             x,cmd,truth,occ=augment(projected,lidar.float()/255.,nav.float()/255.,cmd,truth,occ,visible)
-        with math_attention():
+        with sdpa_kernel(SDPBackend.MATH):
             xy,logits=self.driver.plan(x,v,cmd)
         regression=(F.smooth_l1_loss(xy,truth,beta=.25,reduction="none")*self.weights).mean((0,1))
         gt=occ.float();p=logits.float().sigmoid()

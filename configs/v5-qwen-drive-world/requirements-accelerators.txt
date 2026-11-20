@@ -1,4 +1,0 @@
-# Install with --no-deps into runtime/v5-qwen-drive-deps; retain existing ROCm torch/triton.
-flash-linear-attention==0.6.0
-fla-core==0.6.0
-einops==0.8.1

@@ -12,7 +12,6 @@
 !/docs/
 !/scripts/
 !/viewer/
-!/v5_qwen_drive_world/
 !/v1_dual_system/
 
 # Generated/runtime directories anywhere
@@ -80,3 +79,12 @@ credentials*.json
 secrets*.json
 id_rsa*
 id_ed25519*
+
+# Retired local sources
+/configs/v5-qwen-drive-world
+/scripts/Clear-Obsolete-V5.ps1
+/scripts/Clear-V5DuplicateFiles.ps1
+/scripts/Setup-V5Accelerators.ps1
+/scripts/Verify-V5Lightweight.ps1
+/scripts/Verify-V5Native.ps1
+/scripts/verify_qwen_drive_components.py
