@@ -13,6 +13,7 @@
 !/scripts/
 !/viewer/
 !/v5_qwen_drive_world/
+!/v6_dual_system/
 
 # Generated/runtime directories anywhere
 **/__pycache__/
