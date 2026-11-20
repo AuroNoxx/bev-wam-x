@@ -1,4 +1,4 @@
-"""Bounded UE5 pilot acquisition. Run as python -m v7_mapless_wa.collect."""
+"""Bounded UE5 pilot acquisition. Run as python -m v2_mapless_wa.collect."""
 import argparse,json,math,queue,time
 from pathlib import Path
 import carla,cv2,numpy as np
@@ -96,7 +96,8 @@ def episode(world,tm,road_map,selection,kind,weather,seed,out):
                 raw=np.frombuffer(bundle[3].raw_data,np.float32).reshape(-1,4).copy()
                 raw[:,1]*=-1;raw[:,2]+=2.2
                 np.savez_compressed(frame_dir/'lidar.npz',bev=raster(raw))
-                np.savez_compressed(frame_dir/'audit-scan.npz',returns=raw)
+                sensor_in_ego=np.stack([np.linalg.solve(pose,matrix(img.transform)) for img in bundle])
+                np.savez_compressed(frame_dir/'audit-scan.npz',returns=raw,sensor_in_ego=sensor_in_ego)
                 frames.append(fid);times.append(time.perf_counter()-t0)
             if len(frames)==N and fid-trace[first+N-1][0]>=80 and arc-trace[first+N-1][3]>=61:
                 break

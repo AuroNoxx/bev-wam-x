@@ -19,7 +19,7 @@
   },
   "episodes": [
     {
-      "retained_yaw_range_deg": 39.89765367359701,
+      "retained_yaw_range_deg": 39.89626838067339,
       "scenario": "curve",
       "weather": "ClearSunset",
       "npc_count": 9,
@@ -27,11 +27,11 @@
       "episode_group": "Carla/Maps/Town10HD_Opt/9/1/43",
       "planned_peak_kappa_first_46m": 0.10667037307057217,
       "first_choices_m": 10,
-      "driven_m": 89.02446081250088,
+      "driven_m": 89.02422489192809,
       "sim_ticks": 327
     },
     {
-      "retained_yaw_range_deg": 7.436866815985283,
+      "retained_yaw_range_deg": 7.52051636313918,
       "scenario": "fork",
       "weather": "CloudyNoon",
       "npc_count": 9,
@@ -39,8 +39,8 @@
       "episode_group": "Carla/Maps/Town10HD_Opt/22/1/95",
       "planned_peak_kappa_first_46m": 0.07443801306321296,
       "first_choices_m": 16,
-      "driven_m": 87.17455606860356,
-      "sim_ticks": 470
+      "driven_m": 87.24176340576182,
+      "sim_ticks": 252
     },
     {
       "retained_yaw_range_deg": 0.025244372947696547,
@@ -51,8 +51,8 @@
       "episode_group": "Carla/Maps/Town10HD_Opt/20/4/51",
       "planned_peak_kappa_first_46m": 0.0738788197168514,
       "first_choices_m": 8,
-      "driven_m": 62.76058734847118,
-      "sim_ticks": 631
+      "driven_m": 62.76058730199976,
+      "sim_ticks": 592
     },
     {
       "retained_yaw_range_deg": 1.2482616766141064,
@@ -74,24 +74,32 @@
     35,
     25,
     31,
-    50
+    75
   ],
   "coverage": {
     "front_0_6": {
-      "visible": 18,
-      "cells": 48
+      "visible": 23,
+      "cells": 48,
+      "max_visible": 26,
+      "mean_fraction": 0.5191666666666667
     },
     "front_beyond_bumper": {
-      "visible": 18,
-      "cells": 24
+      "visible": 22,
+      "cells": 24,
+      "max_visible": 24,
+      "mean_fraction": 0.9625
     },
     "left_adjacent": {
-      "visible": 54,
-      "cells": 72
+      "visible": 56,
+      "cells": 72,
+      "max_visible": 57,
+      "mean_fraction": 0.7881944444444444
     },
     "right_adjacent": {
-      "visible": 54,
-      "cells": 72
+      "visible": 57,
+      "cells": 72,
+      "max_visible": 57,
+      "mean_fraction": 0.7916666666666666
     }
   },
   "alignment": {
@@ -101,28 +109,28 @@
       "below_one": 1.0
     },
     "semantic_static_to_low_lidar": {
-      "n": 10081,
+      "n": 10079,
       "p95": 0.0,
       "below_one": 1.0
     },
     "live_semantic_to_survey_static": {
-      "n": 10081,
+      "n": 10079,
       "p95": 0.0,
-      "below_one": 0.99454419204444
+      "below_one": 0.9957337037404504
     },
     "all_paint_to_ego_lane_diagnostic": {
-      "n": 5712,
+      "n": 5710,
       "p95": 20.396,
-      "below_one": 0.24037114845938376
+      "below_one": 0.2404553415061296
     },
     "overlap_rgb_paint": {
-      "n": 3263,
-      "p95": 2.828,
-      "below_one": 0.5822862396567576
+      "n": 4113,
+      "p95": 2.236,
+      "below_one": 0.5412107950401167
     },
     "path_raster_quantization": {
       "n": 4000,
-      "p95": 0.565,
+      "p95": 0.569,
       "below_one": 1.0
     },
     "path_arc_error_m": {
@@ -132,16 +140,23 @@
     }
   },
   "straight_boundary_cross_sections_tested": 250,
-  "mean_bytes": 548220.91,
-  "size_40k_gib": 20.42282037436962,
-  "gpu_samples": 69,
-  "gpu_dedicated_peak_gib": 8.250938415527344,
-  "gpu_dedicated_median_gib": 7.566440582275391,
-  "wall_sim_fps": 22.34337877684001,
-  "retained_fps": 12.590916014217193,
-  "save_and_label_fps": 10.64764310480961,
-  "four_short_episodes_fps": 1.33761683186798,
-  "offline_s": 1.4495159000070998,
-  "hours_40k_stream": 1.043527755554856,
-  "hours_40k_short": 8.306647200001558
+  "mean_bytes": 527350.35,
+  "size_40k_gib": 19.64533142745495,
+  "gpu_samples": 62,
+  "gpu_dedicated_peak_gib": 8.717365264892578,
+  "gpu_dedicated_median_gib": 7.8560333251953125,
+  "wall_sim_fps": 21.51421085133346,
+  "retained_fps": 12.947875091830214,
+  "save_and_label_fps": 10.819645841171127,
+  "four_short_episodes_fps": 1.5218545442444522,
+  "offline_s": 1.519171699997969,
+  "hours_40k_stream": 1.026938522223241,
+  "hours_40k_short": 7.301033566665461,
+  "calibration": {
+    "max_mount_translation_m": 7.065031649868227e-06,
+    "max_mount_angle_deg": 2.1916714941427445e-05,
+    "road_intercept_range_m": 0.18389122411581468,
+    "road_fit_median_abs_residual_p95_m": 0.031
+  },
+  "gate_passed": false
 }

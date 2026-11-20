@@ -5,9 +5,9 @@ import cv2
 import numpy as np
 
 W,H=384,224
-CAMS=((1.5,0,1.5,0,-5,90),(1.2,-.9,1.3,-55,-18,100),(1.2,.9,1.3,55,-18,100))
+CAMS=((1.6,0,1.5,0,-10,100),(1.1,-.9,1.4,-45,-22,110),(1.1,.9,1.4,45,-22,110))
 NAMES=('front','front_left','front_right')
-Z=(-.4,.2,1.,1.8,2.8)
+Z=(-.2,0.,.6,1.4,2.4)
 DX,DY=.75,.30
 X,Y=np.meshgrid(80-(np.arange(128)+.5)*DX,19.2-(np.arange(128)+.5)*DY,indexing='ij')
 
@@ -38,7 +38,7 @@ def raster(scan):
 def projection_tables(extrinsics,heights=Z):
     tables=[];valid=[]
     for height in heights:
-        points=np.stack((X,-Y,np.full_like(X,height)),axis=-1)
+        points=np.stack((X,-Y,np.broadcast_to(height,X.shape)),axis=-1)
         coords=[];masks=[]
         for cam,pose in zip(CAMS,extrinsics):
             p=(points-pose[:3,3])@pose[:3,:3]
@@ -49,6 +49,31 @@ def projection_tables(extrinsics,heights=Z):
             coords.append(np.where(mask[...,None],uv,-1).astype(np.float32));masks.append(mask)
         tables.append(coords);valid.append(masks)
     return np.asarray(tables),np.asarray(valid)
+
+def road_surface(scan):
+    """Fit road altitude in ego FLU. Give each occupied road patch one vote."""
+    x,y,z=scan[:,:3].T
+    use=(x>=1.8)&(x<30)&(abs(y)<3.4)&(abs(z)<.55)
+    pts=scan[use,:3]
+    cells=np.floor(pts[:,:2]/[2.,1.]).astype(int)
+    _,groups=np.unique(cells,axis=0,return_inverse=True)
+    patches=[]
+    for group in range(groups.max()+1 if groups.size else 0):
+        patch=pts[groups==group]
+        if len(patch)>=4:
+            patches.append([*np.median(patch[:,:2],axis=0),np.quantile(patch[:,2],.25)])
+    if len(patches)<9:raise ValueError('Insufficient same-frame road support')
+    pts=np.asarray(patches)
+    design=np.column_stack((pts[:,:2],np.ones(len(pts))))
+    keep=np.ones(len(pts),bool)
+    for _ in range(4):
+        abc,_,rank,_=np.linalg.lstsq(design[keep],pts[keep,2],rcond=None)
+        if rank!=3:raise ValueError('Road plane is underconstrained')
+        residual=pts[:,2]-design@abc
+        mad=np.median(abs(residual[keep]-np.median(residual[keep])))
+        keep=abs(residual)<=max(.035,3*1.4826*mad)
+        if keep.sum()<6:raise ValueError('Insufficient inlier patches')
+    return abc[0]*X+abc[1]*Y+abc[2],abc,float(np.median(abs(residual[keep])))
 
 def sample_arc(points,distances):
     d=np.r_[0,np.cumsum(np.linalg.norm(np.diff(points[:,:2],axis=0),axis=1))]

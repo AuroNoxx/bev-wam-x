@@ -1,6 +1,6 @@
 # highway-occ-flow 项目规则
 
-当前主驾为 v1。源码位于 `v1_dual_system/`，架构与闭环实测见 `README.md`。模型权重、采集数据、运行环境和模拟器只保存在本机。
+当前分支为 v2，源码位于 `v2_mapless_wa/`。保护 `v1_dual_system/` 与已冻存的基线。Town04_Opt 专供零样本闭环，禁止采集训练帧。模型权重、采集数据、运行环境和模拟器只保存在本机。
 
 - 训练使用 PyTorch Lightning。保留已验证的 BF16、SDPA MATH 和 foreach AdamW 路径，推理支持 HIP Graph。加速选项须在本机验证数值与梯度。
 - 训练前检查已有任务，只运行一份训练。每次运行保留最佳及最新断点，使用 VerifiedCheckpointIO 校验后原子替换。报告实际更新数、物理 batch 和梯度累积次数。

@@ -13,7 +13,7 @@
 !/scripts/
 !/viewer/
 !/v1_dual_system/
-!/v7_mapless_wa/
+!/v2_mapless_wa/
 
 # Generated/runtime directories anywhere
 **/__pycache__/
