@@ -18,7 +18,7 @@ from .geometry import CONFIG_SHA256, NAMES
 from .qc_v3 import LABEL_SHAPES, episode_index, load_npz, read_image, run_qc
 from .sim import require_collection_map
 
-FORMAT = "bev-wam-x-stage31-v1"
+FORMAT = "bev-wam-x-stage31-v2"
 MAX_BYTES = 1_500_000_000
 BIT_PACK = {"lanes", "occupancy", "future_occupancy"}
 EP_PATTERN = re.compile(r"ep-[0-9]{6}")
@@ -131,8 +131,7 @@ def episode_members(folder, entry):
             if not ok:
                 raise IOError(f"WebP failed: {path}/{name}")
             yield f"{fid}/{name}.webp", encoded.tobytes()
-        for name in ("obs", "audit", "depth"):
-            yield f"{fid}/{name}.npz", array_bytes(load_npz(path / f"{name}.npz"))
+        yield f"{fid}/obs.npz", array_bytes(load_npz(path / "obs.npz"))
         labels = load_npz(path / "labels.npz")
         collected.append({k: bit_pack(v) if k in BIT_PACK else v for k, v in labels.items()})
     yield "targets.npz", array_bytes({key: np.stack([v[key] for v in collected]) for key in LABEL_SHAPES})
@@ -195,7 +194,7 @@ def expected_members(entries):
         prefix = entry["id"]
         names[f"{prefix}/targets.npz"] = entry["shard"]
         for frame in entry["frame_ids"]:
-            for file in (*[f"{n}.webp" for n in NAMES], "obs.npz", "audit.npz", "depth.npz"):
+            for file in (*[f"{n}.webp" for n in NAMES], "obs.npz"):
                 names[f"{prefix}/{frame}/{file}"] = entry["shard"]
     return names
 
@@ -242,17 +241,24 @@ def verify_pack(source, manifest_path, samples=24, seed=314):
 
     with ExitStack() as context:
         shards = {}
+        expected = expected_members(entries)
         for (folder, info), entry in zip(raw, entries, strict=True):
             if any(entry.get(k) != v for k, v in info.items()):
                 raise ValueError("Original episode metadata changed")
             shard = entry["shard"]
             if shard not in shards:
-                shards[shard] = context.enter_context(tarfile.open(manifest_path.parent / shard, "r:"))
-            archive = shards[shard]
+                archive = context.enter_context(tarfile.open(manifest_path.parent / shard, "r:"))
+                members = {}
+                for member in archive.getmembers():
+                    if not member.isfile() or expected.pop(member.name, None) != shard:
+                        raise ValueError(f"Unexpected or duplicate archive member: {member.name}")
+                    members[member.name] = member
+                shards[shard] = archive, members
+            archive, members = shards[shard]
             prefix = entry["id"]
 
             def arrays(name):
-                with archive.extractfile(f"{prefix}/{name}") as obj:
+                with archive.extractfile(members[f"{prefix}/{name}"]) as obj:
                     with np.load(io.BytesIO(obj.read()), allow_pickle=False) as npz:
                         return {k: npz[k] for k in npz.files}
 
@@ -267,14 +273,15 @@ def verify_pack(source, manifest_path, samples=24, seed=314):
                     if original[k].dtype == np.bool_:
                         recovered[k] = recovered[k].astype(bool)
                 verify_arrays(original, recovered)
-                for name in ("obs", "audit", "depth"):
-                    verify_arrays(load_npz(src / f"{name}.npz"), arrays(f"{fid}/{name}.npz"))
+                verify_arrays(load_npz(src / "obs.npz"), arrays(f"{fid}/obs.npz"))
                 for name in NAMES:
-                    with archive.extractfile(f"{prefix}/{fid}/{name}.webp") as fr:
+                    with archive.extractfile(members[f"{prefix}/{fid}/{name}.webp"]) as fr:
                         img = cv2.imdecode(np.frombuffer(fr.read(), np.uint8), cv2.IMREAD_COLOR)
                     if img is None or img.shape != read_image(src / f"{name}.png").shape:
                         raise ValueError(f"WebP shape mismatch: {src}/{name}")
                 total += 1
+        if expected:
+            raise ValueError("Archive members missing")
     return dict(sampled_frames=total, max_abs_diff=0.0, route_overlap=0, initial_state_overlap=0)
 
 

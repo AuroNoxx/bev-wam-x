@@ -134,9 +134,3 @@ class Rig:
 
 def bgr(image):
     return np.frombuffer(image.raw_data, np.uint8).reshape(image.height, image.width, 4)[..., :3]
-
-
-def depth_cm(image):
-    channels = bgr(image).astype(np.uint32)
-    packed = (channels[..., 0] << 16) | (channels[..., 1] << 8) | channels[..., 2]
-    return np.minimum(np.rint(packed * (100_000. / 16777215.)), 65535).astype(np.uint16)

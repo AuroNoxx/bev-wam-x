@@ -6,13 +6,13 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from .geometry import CFG, H, W, NAMES, SIZES, HEIGHTS, grid, projection_tables
+from .geometry import CFG, NAMES, SIZES, HEIGHTS, grid, projection_tables
 from .labels import MAX_BOX, MIN_BOX, OBJECT_CLASSES, OBJECT_SLOTS, VECTOR_X
 
 D = 256
 LATENT_TOKENS = 64
 LIFT_SHAPE = (40, 30)
-DECODE_SHAPE = (20, 15)
+DECODE_SHAPE = (40, 30)
 CLIP_LEN = 4
 
 
@@ -98,7 +98,8 @@ class BEVWAMXPerception(nn.Module):
     """Accept only online sensor inputs and explicit recurrent state.
 
     rgb is an ordered tuple of six uint8 RGB BCHW tensors. lidar_bev is Bx6x160x120
-    or None. cmd is Bx3 [follow, left, right], and reaches only the trajectory head.
+    or None. Command Bx3, nav anchors Bx3x3 in FLU, and speed/yaw rate Bx2 in SI
+    reach only the trajectory head.
     prev_latent is Bx64x256; ego_delta uses v2's previous-relative-to-current convention.
     """
 
@@ -132,6 +133,8 @@ class BEVWAMXPerception(nn.Module):
         self.plan_attention = AttentionBlock()
         self.plan_query = nn.Parameter(torch.randn(1, 1, D) * .02)
         self.cmd_embed = nn.Linear(3, D)
+        self.nav_embed = nn.Linear(9, D)
+        self.speed_embed = nn.Linear(2, D)
         self.plan = nn.Sequential(nn.Linear(D, D), nn.GELU(), nn.Linear(D, 75))
 
         coords, valid = projection_tables(shape=LIFT_SHAPE)
@@ -149,6 +152,8 @@ class BEVWAMXPerception(nn.Module):
         self.register_buffer("center_offset", torch.tensor([20., 0., 1.]), persistent=False)
         self.register_buffer("heading_offset", torch.tensor([0., 1.]), persistent=False)
         self.register_buffer("path_scale", torch.tensor([15., 4.]), persistent=False)
+        self.register_buffer("nav_scale", torch.tensor([36., 12., 6.]), persistent=False)
+        self.register_buffer("speed_scale", torch.tensor([30., 1.]), persistent=False)
 
     def lift(self, rgb):
         batch = rgb[0].shape[0]
@@ -169,7 +174,8 @@ class BEVWAMXPerception(nn.Module):
             planes = contribution if planes is None else planes + contribution
         return self.lift_reduce(planes.flatten(1, 2))
 
-    def forward(self, rgb, lidar_bev=None, prev_latent=None, ego_delta=None, cmd=None):
+    def forward(self, rgb, lidar_bev=None, prev_latent=None, ego_delta=None, cmd=None,
+                nav_anchors=None, ego_speed=None):
         if len(rgb) != len(NAMES):
             raise ValueError("Expected six RGB tensors in config camera order")
         b = rgb[0].shape[0]
@@ -190,24 +196,42 @@ class BEVWAMXPerception(nn.Module):
             motion = self.delta_embed(ego_delta.to(tokens.dtype)).unsqueeze(1)
             tokens = torch.cat((tokens, prev_latent.to(tokens.dtype) + motion), dim=1)
         z_t = self.latent_norm(self.latent_blocks(self.resample(queries, tokens)))
+        return dict(z_t=z_t, **self.decode_perception(z_t),
+                    trajectory=self.plan_trajectory(z_t, cmd, nav_anchors, ego_speed))
+
+    def decode_perception(self, z_t):
+        """Decode the Stage 3.2 latent without consuming observations or planning inputs."""
+        b = z_t.shape[0]
         spatial = self.dense_attention(self.dense_queries.to(z_t.dtype).expand(b, -1, -1), z_t)
         spatial = spatial.transpose(1, 2).reshape(b, D, *DECODE_SHAPE)
-        dense = F.interpolate(self.dense(spatial), size=(H, W), mode="bilinear", align_corners=False)
+        dense = self.dense(spatial)
         vectors = self.vector(self.vector_attention(self.vector_queries.to(z_t.dtype).expand(b, -1, -1), z_t))
         obj = self.objects(self.object_attention(self.object_queries.to(z_t.dtype).expand(b, -1, -1), z_t)).float()
         center = obj[..., :3].tanh() * self.center_scale + self.center_offset
         size = self.box_min + self.box_span * obj[..., 3:6].sigmoid()
         heading = F.normalize(obj[..., 6:8] + self.heading_offset, dim=-1, eps=1e-6)
         boxes = torch.cat((center, size, heading, obj[..., 8:10] * 10), dim=-1)
+        return dict(lane_logits=dense[:, :4], occupancy_logits=dense[:, 4:12],
+                    future_occupancy_logits=dense[:, 12:17], vector_exists_logits=vectors[..., -1],
+                    vectors=vectors[..., :-1].reshape(b, 7, len(VECTOR_X), 2) * 10.,
+                    boxes=boxes, cls_logits=obj[..., 10:-1], obj_logits=obj[..., -1])
+
+    def plan_trajectory(self, z_t, cmd=None, nav_anchors=None, ego_speed=None):
+        b = z_t.shape[0]
         plan_query = self.plan_query.to(z_t.dtype).expand(b, -1, -1)
         if cmd is not None:
             if cmd.shape != (b, 3):
                 raise ValueError("cmd must be Bx3")
             plan_query = plan_query + self.cmd_embed(cmd.to(z_t.dtype))[:, None]
+        if nav_anchors is not None:
+            if nav_anchors.shape != (b, 3, 3):
+                raise ValueError("nav_anchors must be Bx3x3")
+            nav = (nav_anchors / self.nav_scale).reshape(b, 9).to(z_t.dtype)
+            plan_query = plan_query + self.nav_embed(nav)[:, None]
+        if ego_speed is not None:
+            if ego_speed.shape != (b, 2):
+                raise ValueError("ego_speed must be Bx2")
+            motion = (ego_speed / self.speed_scale).to(z_t.dtype)
+            plan_query = plan_query + self.speed_embed(motion)[:, None]
         path = self.plan(self.plan_attention(plan_query, z_t)).float().reshape(b, 25, 3)
-        path = torch.cat((path[..., :2] * self.path_scale,
-                          F.softplus(path[..., 2:]) * 10.), dim=-1)
-        return dict(z_t=z_t, lane_logits=dense[:, :4], occupancy_logits=dense[:, 4:12],
-                    future_occupancy_logits=dense[:, 12:17], vector_exists_logits=vectors[..., -1],
-                    vectors=vectors[..., :-1].reshape(b, 7, len(VECTOR_X), 2) * 10.,
-                    boxes=boxes, cls_logits=obj[..., 10:-1], obj_logits=obj[..., -1], trajectory=path)
+        return torch.cat((path[..., :2] * self.path_scale, F.softplus(path[..., 2:]) * 10.), dim=-1)

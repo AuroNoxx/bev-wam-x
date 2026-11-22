@@ -19,7 +19,8 @@ rgb:
     front_right: {size: [320, 180], pose: [1.10, 0.90, 1.40,  55, -12, 110]}
     back_left:   {size: [320, 180], pose: [-1.05,-0.90,1.42,-115, -12, 110]}
     back_right:  {size: [320, 180], pose: [-1.05, 0.90,1.42, 115, -12, 110]}
-    back:        {size: [320, 180], pose: [-2.00, 0.00,1.45, 180, -12, 110]}
+    # Mount aft of the Lincoln's rear envelope, facing away from the car.
+    back:        {size: [320, 180], pose: [-2.85, 0.00,1.65, 180, -12, 110]}
 lidar:
   channels: 64
   rotation_frequency: 10
@@ -39,7 +40,10 @@ calibration:
   minimum_frames: 20
   ground_annulus_m: [5.0, 30.0]
   min_coverage_fraction: 0.995
-  max_gap_degrees: 2
+  max_gap_degrees: 0
   max_lane_p95_px: 4.0
+  max_back_ego_occlusion_fraction: 0.0
+  nominal_marking_width_m: 0.15
+  min_marking_width_px: 0.5
   max_mount_error: 0.001
   min_lane_matches_per_camera: 25

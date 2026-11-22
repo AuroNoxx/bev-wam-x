@@ -10,12 +10,13 @@ import numpy as np
 from .geometry import (CONFIG_SHA256, DT, H, W, Z, NAMES, SIZES, camera_mounts, delta_error,
                        project, wrap)
 from .labels import MAX_BOX, MIN_BOX, OBJECT_CLASSES, VECTOR_X, footprint
+from .observations import AUDIT_SENSORS, command_vector, validate_observation
 from .sim import require_collection_map
 
 LABEL_SHAPES = dict(lanes=(4, H, W), vectors=(7, len(VECTOR_X), 2),
                     vector_valid=(7, len(VECTOR_X)), vector_exists=(7,), boxes=(32, 11), box_ids=(32,),
                     occupancy=(Z, H, W), future_occupancy=(5, H, W), trajectory=(25, 3),
-                    ego_state=(7,), flags=(3,), thw=(), thw_actor_id=(), nav_anchors=(3, 3), nav_state=(3,),
+                    ego_state=(7,), flags=(3,), thw=(), thw_actor_id=(), nav_state=(3,),
                     lane_state=(3,))
 BINARY = ("lanes", "vector_valid", "vector_exists", "occupancy", "future_occupancy", "flags")
 EVENTS = ("straight", "curve", "sharp_curve", "left_change", "right_change", "slow_overtake", "ramp")
@@ -165,27 +166,41 @@ def audit_episode(folder, info, out, episode_number):
     check(len(frames) >= 4 and all(type(f) is int for f in frames) and np.all(np.diff(frames) == 1),
           f"Missing or nonconsecutive frames: {folder}")
     check({p.name for p in folder.iterdir() if p.is_dir()} == set(expected), f"Unindexed frames: {folder}")
+    change = info["lane_change"]
+    requested, ended = change["requested_frame"], change["ended_frame"]
+    scenario_side = {"left_change": "left", "right_change": "right", "slow_overtake": "left"}.get(info["scenario"])
+    if requested is None:
+        check(ended is None and change["side"] == "follow" and change["status"] == "unrequested",
+              f"Invalid unrequested command: {folder}")
+    else:
+        check(requested in frames[12:] and change["side"] == scenario_side, f"Invalid command request: {folder}")
+        check((ended is None and change["status"] == "executing") or
+              (ended in frames and ended > requested and change["status"] in {"completed", "timed_out"}),
+              f"Invalid command end: {folder}")
     stamps, poses, states, painted, evidence = [], [], [], 0, []
     prev = None
     for idx, fid in enumerate(frames):
         path = folder / str(fid)
-        obs, audit, labels, depth = [load_npz(path / f"{n}.npz") for n in ("obs", "audit", "labels", "depth")]
-        check_finite(obs, audit, labels, depth)
-        check(set(obs) == {"lidar_bev", "ego_delta"} and obs["lidar_bev"].shape == (6, H, W) and
-              obs["ego_delta"].shape == (3,), f"Invalid observation contract: {path}")
+        obs, audit, labels = [load_npz(path / f"{n}.npz") for n in ("obs", "audit", "labels")]
+        validate_observation(obs)
+        check_finite(audit, labels)
         check(set(labels) == set(LABEL_SHAPES) and all(labels[n].shape == s for n, s in LABEL_SHAPES.items()),
               f"Invalid target shapes: {path}")
         check(all(np.isin(labels[n], (0, 1)).all() for n in BINARY), f"Non-binary masks: {path}")
         check(np.array_equal(labels["vector_exists"], labels["vector_valid"].any(axis=1)),
               f"Vector existence inconsistent: {path}")
-        check(audit["sensor_ids"].shape == (13,) and np.all(audit["sensor_ids"] == fid),
+        check(np.array_equal(obs["ego_speed"], labels["ego_state"][[0, 3]]), f"Speed or yaw rate mismatch: {path}")
+        active_cmd = requested is not None and fid >= requested and (ended is None or fid < ended)
+        cmd = command_vector(change["side"] if active_cmd else "follow")
+        check(np.array_equal(obs["cmd"], cmd), f"Command outside the execution window: {path}")
+        check(audit["sensor_ids"].shape == (len(AUDIT_SENSORS),) and np.all(audit["sensor_ids"] == fid),
               f"Sensor frame mismatch: {path}")
         ts = audit["timestamps"]
-        check(ts.shape == (13,) and np.ptp(ts) <= .001, f"Sensor timestamp mismatch: {path}")
+        check(ts.shape == (len(AUDIT_SENSORS),) and np.ptp(ts) <= .001, f"Sensor timestamp mismatch: {path}")
         stamps.append(ts)
         pose = audit["pose"]
         scan = audit["lidar_points"]
-        check(pose.shape == (4, 4) and audit["sensor_poses"].shape == (13, 4, 4) and
+        check(pose.shape == (4, 4) and audit["sensor_poses"].shape == (len(AUDIT_SENSORS), 4, 4) and
               np.allclose(pose[:3, :3].T @ pose[:3, :3], np.eye(3), atol=1e-6) and
               np.array_equal(pose[3], [0., 0., 0., 1.]) and scan.ndim == 2 and
               scan.shape[1] == 4 and len(scan) > 0, f"Invalid pose or LiDAR: {path}")
@@ -214,8 +229,7 @@ def audit_episode(folder, info, out, episode_number):
         views = []
         for name, (w, h) in zip(NAMES, SIZES):
             view = read_image(path / f"{name}.png")
-            check(view.shape == (h, w, 3) and view.dtype == np.uint8 and
-                  depth[name].shape == (h, w) and depth[name].dtype == np.uint16, f"Sensor shape: {path}/{name}")
+            check(view.shape == (h, w, 3) and view.dtype == np.uint8, f"Sensor shape: {path}/{name}")
             views.append(view)
         if idx % 12 == 0 and len(evidence) < 3:
             mounts = np.linalg.solve(pose, audit["sensor_poses"][:6])

@@ -8,6 +8,7 @@ import numpy as np
 import torch
 
 from .geometry import CONFIG_SHA256, H, NAMES, SIZES, W
+from .observations import validate_observation
 from .perception_model import BEVWAMXPerception, sdpa_context
 from .qc_v3 import load_npz, read_image
 
@@ -17,16 +18,18 @@ def observations(frame):
         rgb = tuple(torch.from_numpy(read_image(frame / f"{n}.png")[..., ::-1].copy())
                     .permute(2, 0, 1)[None].cuda().contiguous() for n in NAMES)
         obs = load_npz(frame / "obs.npz")
-        xy = torch.from_numpy(obs["ego_delta"])[None].cuda()
-        lidar = torch.from_numpy(obs["lidar_bev"])[None].cuda()
+        validate_observation(obs)
+        inputs = {k: torch.from_numpy(v)[None].cuda() for k, v in obs.items()}
     else:
         rgb = tuple(torch.randint(0, 256, (1, 3, h, w), dtype=torch.uint8, device="cuda") for w, h in SIZES)
-        lidar = torch.rand((1, 6, H, W), device="cuda")
-        xy = torch.tensor([[-1.1, .013, .025]], device="cuda")
+        inputs = dict(lidar_bev=torch.rand((1, 6, H, W), device="cuda"),
+                      ego_delta=torch.tensor([[-1.1, .013, .025]], device="cuda"),
+                      cmd=torch.tensor([[0., 1., 0.]], device="cuda"),
+                      nav_anchors=torch.tensor([[[12., .2, .1], [23., 2., .3], [34., 4., .6]]], device="cuda"),
+                      ego_speed=torch.tensor([[11., .035]], device="cuda"))
     if tuple((int(x.shape[-1]), int(x.shape[-2])) for x in rgb) != SIZES:
         raise ValueError("Wrong input image dimensions")
-    cmd = torch.tensor([[1., 0., 0.]], device="cuda")
-    return rgb, lidar, xy, cmd
+    return rgb, inputs
 
 
 def measure(call, n):
@@ -59,15 +62,15 @@ def compare(args):
         if state["task_state"]["config_sha256"] != CONFIG_SHA256:
             raise ValueError("Checkpoint sensor calibration mismatch")
         model.load_state_dict({k.removeprefix("model."): v for k, v in state["state_dict"].items()})
-    rgb, lidar, motion, cmd = observations(args.frame)
+    rgb, inputs = observations(args.frame)
 
     def step():
-        return model(rgb, lidar, previous, motion, cmd)
+        return model(rgb, prev_latent=previous, **inputs)
 
     free_before, capacity = torch.cuda.mem_get_info()
     card_used = [capacity - free_before]
     with sdpa_context(args.sdpa), torch.autocast("cuda", dtype=torch.bfloat16, cache_enabled=False):
-        previous = model(rgb, lidar)["z_t"].clone()
+        previous = model(rgb, **inputs)["z_t"].clone()
         warm_stream = torch.cuda.Stream()
         warm_stream.wait_stream(torch.cuda.current_stream())
         with torch.cuda.stream(warm_stream):

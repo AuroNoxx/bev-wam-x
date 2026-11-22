@@ -92,9 +92,14 @@ def camera_mounts():
     return np.stack([carla_pose(*cam["pose"][:5]) for cam in CAMERAS.values()])
 
 
+def focal_length_px(camera):
+    width = CAMERAS[camera]["size"][0]
+    return width / (2 * np.tan(np.deg2rad(CAMERAS[camera]["pose"][-1] / 2)))
+
+
 def project(xyz_flu, camera, mount):
     width, height = CAMERAS[camera]["size"]
-    focal = width / (2 * np.tan(np.deg2rad(CAMERAS[camera]["pose"][-1] / 2)))
+    focal = focal_length_px(camera)
     native = (xyz_flu * FLU - mount[:3, 3]) @ mount[:3, :3]
     depth = native[..., 0]
     safe_depth = np.maximum(depth, 1e-6)

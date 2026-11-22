@@ -24,7 +24,7 @@ def unit(x):
     return x / max(np.linalg.norm(x), 1e-8)
 
 
-def prediction_scene(pred, *, speed=0., cruise=0., intent="跟车", alternatives=(), previous_scene=None):
+def prediction_scene(pred, *, speed=0., cruise=0., intent="Follow", alternatives=(), previous_scene=None):
     """Convert one batched model result into the unbatched renderer contract."""
     def as_numpy(x):
         return x.detach().float().cpu().numpy()[0]

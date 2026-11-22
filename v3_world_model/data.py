@@ -8,6 +8,7 @@ import torch
 from torch.utils.data import Dataset
 
 from .geometry import NAMES, SIZES
+from .observations import OBS_FIELDS, validate_observation
 from .pack_colab_v3 import read_manifest, unpack_targets
 from .perception_model import CLIP_LEN
 from .qc_v3 import load_npz, read_image
@@ -16,9 +17,19 @@ TRAIN_TARGETS = ("lanes", "vectors", "vector_valid", "vector_exists", "boxes", "
                  "future_occupancy", "trajectory")
 
 
+def color_jitter_table():
+    """One RGB transform shared by every camera and frame in a training clip."""
+    brightness = np.random.uniform(.92, 1.08)
+    contrast = np.random.uniform(.88, 1.12)
+    color = np.random.uniform(.94, 1.06, size=3)
+    levels = (np.arange(256, dtype=np.float32)[:, None] - 127.5) * contrast + 127.5
+    return np.rint((levels * brightness * color).clip(0, 255)).astype(np.uint8)[None]
+
+
 class Clips(Dataset):
     def __init__(self, root, split, stride=CLIP_LEN):
         self.root = Path(root)
+        self.training = split == "train"
         manifest = read_manifest(self.root / "manifest.json", check_shards=False)
         selected = set(manifest["splits"][split])
         self.entries = {e["id"]: e for e in manifest["episodes"] if e["id"] in selected}
@@ -39,25 +50,25 @@ class Clips(Dataset):
             if len(self.target_cache) > 8:
                 self.target_cache.popitem(last=False)
         self.target_cache.move_to_end(episode)
-        rgb, lidar, motion, targets = [[] for _ in NAMES], [], [], []
+        rgb = [[] for _ in NAMES]
+        inputs = {k: [] for k in OBS_FIELDS}
+        targets = []
+        jitter = color_jitter_table() if self.training else None
         for i in range(start, start + CLIP_LEN):
             folder = self.root / episode / str(entry["frame_ids"][i])
             for n, (w, h), bag in zip(NAMES, SIZES, rgb):
                 image = read_image(folder / f"{n}.webp")
                 if image.shape != (h, w, 3) or image.dtype != np.uint8:
                     raise ValueError(f"Invalid packed image: {folder}/{n}")
-                bag.append(cv2.cvtColor(image, cv2.COLOR_BGR2RGB).transpose(2, 0, 1))
+                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                if jitter is not None:
+                    image = cv2.LUT(image, jitter)
+                bag.append(image.transpose(2, 0, 1))
             obs = load_npz(folder / "obs.npz")
-            if set(obs) != {"lidar_bev", "ego_delta"}:
-                raise ValueError(f"Unexpected packed inputs at {folder}")
-            lidar.append(obs["lidar_bev"])
-            motion.append(obs["ego_delta"])
+            validate_observation(obs)
+            for k in inputs:
+                inputs[k].append(obs[k])
             targets.append(unpack_targets(self.target_cache[episode], i))
-        # Scripted command is known before driving and is independent of future labels.
-        intent = {"left_change": 1, "right_change": 2, "slow_overtake": 1}.get(entry["scenario"], 0)
-        command = np.eye(3, dtype=np.float32)[[intent] * CLIP_LEN]
-        return dict(inputs=dict(rgb=tuple(torch.from_numpy(np.stack(im)) for im in rgb),
-                                lidar_bev=torch.from_numpy(np.stack(lidar)),
-                                ego_delta=torch.from_numpy(np.stack(motion)),
-                                cmd=torch.from_numpy(command)),
-                    targets={k: torch.from_numpy(np.stack([t[k] for t in targets])) for k in TRAIN_TARGETS})
+        batch = {k: torch.from_numpy(np.stack(values)) for k, values in inputs.items()}
+        batch["rgb"] = tuple(torch.from_numpy(np.stack(im)) for im in rgb)
+        return dict(inputs=batch, targets={k: torch.from_numpy(np.stack([t[k] for t in targets])) for k in TRAIN_TARGETS})

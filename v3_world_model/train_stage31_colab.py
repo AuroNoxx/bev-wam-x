@@ -1,6 +1,7 @@
 """Train Stage 3.1 using verified, extracted packs and PyTorch Lightning."""
 import argparse
 import json
+import math
 import os
 import tempfile
 from pathlib import Path
@@ -23,6 +24,14 @@ from .perception_model import BEVWAMXPerception, CLIP_LEN, sdpa_context
 LOSS_WEIGHTS = dict(lane=1., vectors=.4, objects=1., occupancy=1., trajectory=.6)
 
 
+def lr_factor(step, warmup, total):
+    """Linear ramp followed by a cosine decay to 5% of the base LR."""
+    if step < warmup:
+        return (step + 1) / warmup
+    fraction = min(1., (step - warmup) / (total - warmup))
+    return .05 + .95 * (1 + math.cos(math.pi * fraction)) / 2
+
+
 class Stage31(pl.LightningModule):
     def __init__(self, config):
         super().__init__()
@@ -36,8 +45,9 @@ class Stage31(pl.LightningModule):
         with sdpa_context(self.config["sdpa"]):
             for t in range(CLIP_LEN):
                 p = self.model(tuple(x[:, t].contiguous() for x in inputs["rgb"]),
-                               inputs["lidar_bev"][:, t], previous, inputs["ego_delta"][:, t],
-                               inputs["cmd"][:, t])
+                               lidar_bev=inputs["lidar_bev"][:, t], prev_latent=previous,
+                               ego_delta=inputs["ego_delta"][:, t], cmd=inputs["cmd"][:, t],
+                               nav_anchors=inputs["nav_anchors"][:, t], ego_speed=inputs["ego_speed"][:, t])
                 previous = p["z_t"]
                 losses = stage31_losses(p, {k: v[:, t] for k, v in targets.items()})
                 for key, value in losses.items():
@@ -57,7 +67,10 @@ class Stage31(pl.LightningModule):
         self.shared_step(batch, "val")
 
     def configure_optimizers(self):
-        return torch.optim.AdamW(self.parameters(), lr=self.config["learning_rate"], weight_decay=.01, foreach=True)
+        optimizer = torch.optim.AdamW(self.parameters(), lr=self.config["learning_rate"], weight_decay=.01, foreach=True)
+        warmup, total = self.config["warmup_updates"], self.config["schedule_updates"]
+        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lambda step: lr_factor(step, warmup, total))
+        return dict(optimizer=optimizer, lr_scheduler=dict(scheduler=scheduler, interval="step"))
 
     def on_save_checkpoint(self, checkpoint):
         checkpoint["task_state"] = self.config
@@ -65,8 +78,8 @@ class Stage31(pl.LightningModule):
     def on_load_checkpoint(self, checkpoint):
         old = checkpoint["task_state"]
         for key in ("config_sha256", "pack_sha256", "learning_rate", "clip_len", "physical_batch",
-                    "gradient_accumulation", "lidar_dropout", "seed"):
-            if old[key] != self.config[key]:
+                    "gradient_accumulation", "lidar_dropout", "seed", "warmup_updates", "schedule_updates"):
+            if old.get(key) != self.config[key]:
                 raise ValueError(f"Cannot resume with changed {key}")
 
 
@@ -133,15 +146,29 @@ def check_existing_training():
 
 
 def config_for(args):
+    saved = (json.loads((args.out / "training-config.json").read_text(encoding="utf-8"))
+             if args.resume else {})
+    total = args.schedule_updates
+    if total is None:
+        total = saved.get("schedule_updates", args.max_updates)
+    warmup = args.warmup_updates
+    if warmup is None:
+        warmup = saved.get("warmup_updates", min(500, total // 20))
+    if not 0 <= warmup < total:
+        raise ValueError("Warmup updates must be nonnegative and below the schedule length")
     return dict(config_sha256=CONFIG_SHA256, pack_sha256=sha256(args.dataset / "manifest.json"),
                 physical_batch=args.batch, gradient_accumulation=args.accumulate, clip_len=CLIP_LEN,
                 max_updates=args.max_updates, checkpoint_every=args.checkpoint_every,
-                learning_rate=args.lr, lidar_dropout=args.lidar_dropout, seed=args.seed,
+                learning_rate=args.lr, warmup_updates=warmup, schedule_updates=total,
+                lidar_dropout=args.lidar_dropout, seed=args.seed,
                 accelerator=args.accelerator, precision=args.precision, sdpa=args.sdpa,
                 num_workers=args.workers)
 
 
 def train(args):
+    resume = args.out / "latest.ckpt" if args.resume else None
+    if args.resume and not resume.is_file():
+        raise FileNotFoundError(resume)
     cfg = config_for(args)
     if args.accelerator == "gpu":
         if not torch.cuda.is_available():
@@ -152,15 +179,14 @@ def train(args):
     pl.seed_everything(args.seed, workers=True)
     cv2.setNumThreads(1)
     args.out.mkdir(parents=True, exist_ok=True)
-    resume = args.out / "latest.ckpt" if args.resume else None
-    if args.resume and not resume.is_file():
-        raise FileNotFoundError(resume)
     if not args.resume and any((args.out / f).exists() for f in ("latest.ckpt", "best.ckpt", "validation.jsonl")):
         raise ValueError("Use --resume or a fresh run directory")
     module = Stage31(cfg)
     cfg["parameter_count"] = sum(p.numel() for p in module.parameters())
-    atomic_json(args.out / "training-config.json", cfg)
     train_data, val_data = (Clips(args.dataset, split) for split in ("train", "val"))
+    # Keep the last valid schedule on disk if an incompatible resume request fails.
+    if not args.resume:
+        atomic_json(args.out / "training-config.json", cfg)
     loaders = dict(batch_size=args.batch, num_workers=args.workers, pin_memory=args.accelerator == "gpu",
                    persistent_workers=args.workers > 0)
     trainer, best = build_trainer(cfg, args.out)
@@ -181,8 +207,10 @@ def train(args):
             best.best_k_models = {best_path: best.best_model_score}
             trainer.save_checkpoint(best_path)
     trainer.save_checkpoint(args.out / "latest.ckpt")
+    atomic_json(args.out / "training-config.json", cfg)
     atomic_json(args.out / "training-result.json",
                 dict(cfg, actual_updates=trainer.global_step,
+                     learning_rate_after_update=trainer.optimizers[0].param_groups[0]["lr"],
                      peak_memory_bytes=torch.cuda.max_memory_allocated() if args.accelerator == "gpu" else 0,
                      peak_reserved_bytes=torch.cuda.max_memory_reserved() if args.accelerator == "gpu" else 0,
                      device=torch.cuda.get_device_name(0) if args.accelerator == "gpu" else "CPU",
@@ -194,9 +222,11 @@ def main():
     parser.add_argument("--dataset", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--resume", action="store_true")
-    parser.add_argument("--batch", type=int, default=2)
-    parser.add_argument("--accumulate", type=int, default=8)
+    parser.add_argument("--batch", type=int, default=8)
+    parser.add_argument("--accumulate", type=int, default=2)
     parser.add_argument("--max-updates", type=int, default=10000)
+    parser.add_argument("--warmup-updates", type=int, help="Default: 5%% of schedule length, capped at 500")
+    parser.add_argument("--schedule-updates", type=int, help="Fixed cosine schedule length, defaults to first run's max-updates")
     parser.add_argument("--checkpoint-every", type=int, default=100)
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--lr", type=float, default=2e-4)

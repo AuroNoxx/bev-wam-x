@@ -4,17 +4,23 @@ from scipy.optimize import linear_sum_assignment
 from torch.nn import functional as F
 
 
-def segmentation(logits, target, focal=False):
+LANE_POS_WEIGHT = (1., 8., 8., 3.)
+OCC_POS_WEIGHT = 20.
+
+
+def segmentation(logits, target, pos_weight=1., focal=False):
     logits, target = logits.float(), target.float()
     prob = logits.sigmoid()
-    bce = F.binary_cross_entropy_with_logits(logits, target, reduction="none")
+    weight = logits.new_tensor(pos_weight).reshape(-1, 1, 1)
+    loss = F.binary_cross_entropy_with_logits(logits, target, pos_weight=weight)
     if focal:
+        bce = F.binary_cross_entropy_with_logits(logits, target, reduction="none")
         pt = prob * target + (1. - prob) * (1. - target)
         alpha = .75 * target + .25 * (1 - target)
-        return bce.mean() + (alpha * (1 - pt).square() * bce).mean()
+        loss = loss + (alpha * (1 - pt).square() * bce).mean()
     prob, target = prob.flatten(2), target.flatten(2)
     dice = (2 * (prob * target).sum(-1) + 1) / (prob.sum(-1) + target.sum(-1) + 1)
-    return bce.mean() + (1 - dice).mean()
+    return loss + (1 - dice).mean()
 
 
 def detection(prediction, targets):
@@ -67,8 +73,8 @@ def stage31_losses(p, y):
     turn_weights = torch.cat((torch.ones_like(moving[:, :1]), 1. + 3. * curvature), dim=1)
     direction = 1. - F.cosine_similarity(tangents, expected, dim=-1, eps=1e-5)
     trajectory = trajectory + (direction * moving * turn_weights).sum() / moving.sum().clamp_min(1)
-    return dict(lane=segmentation(p["lane_logits"], y["lanes"]), vectors=vec,
+    return dict(lane=segmentation(p["lane_logits"], y["lanes"], LANE_POS_WEIGHT), vectors=vec,
                 objects=detection(p, y["boxes"]),
-                occupancy=segmentation(p["occupancy_logits"], y["occupancy"], focal=True) +
-                segmentation(p["future_occupancy_logits"], y["future_occupancy"], focal=True),
+                occupancy=segmentation(p["occupancy_logits"], y["occupancy"], OCC_POS_WEIGHT, focal=True) +
+                segmentation(p["future_occupancy_logits"], y["future_occupancy"], OCC_POS_WEIGHT, focal=True),
                 trajectory=trajectory)
