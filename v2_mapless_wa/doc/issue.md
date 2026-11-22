@@ -1,4 +1,4 @@
-# CARLA v2 无高精地图驾驶：Stage 2 → Stage 2.6 架构、闭环与问题报告
+# BEV-WAM-X · CARLA v2 无高精地图驾驶：Stage 2 → Stage 2.6 技术报告
 
 更新于 2026-11-22，分支 `codex/v2-mapless-wa`。本文档记录本分支从 Stage 2（本机第 14 轮冻存基线 `models/v2_stage2_nativeC_40k_20261121/stage2.pt`，权重仅存本机不入库）演进到 **Stage 2.6** 的架构修改、云端训练与本机验证结果、平滑控制升级、9 路线闭环表现，以及当前已知边界与 **Stage 3** 规划。模拟器为 CARLA 1.0 / UE 5.8。
 

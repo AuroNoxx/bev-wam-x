@@ -1,4 +1,4 @@
-# highway-occ-flow 项目规则
+# bev-wam-x 项目规则
 
 当前分支为 v2，源码位于 `v2_mapless_wa/`。保护 `v1_dual_system/` 与已冻存的基线。Town04_Opt 专供零样本闭环，禁止采集训练帧。运行环境、模拟器与最终冻存基线保存在本机；允许将训练数据打包上传至 Google Colab / Drive 进行云端训练，产出权重须下载回本机验收后再冻存（勿将大文件提交进 Git）。
 
