@@ -1,0 +1,45 @@
+simulator: CARLA 1.0
+engine: UE 5.8
+collection_maps: [Town12, Town10HD_Opt]
+fixed_delta_seconds: 0.10
+physics:
+  max_substep_delta_time: 0.02
+  max_substeps: 5
+rgb:
+  enable_postprocess_effects: false
+  preprocessing_gamma: 0.5
+  stored_rgb: raw
+  total_pixels: 518400
+  projection_heights_m: [-0.2, 0.0, 0.6, 1.4, 2.4]
+  # CARLA vehicle axes: X forward, Y right, Z up. Pose is
+  # [x_m, y_m, z_m, yaw_deg, pitch_deg, horizontal_fov_deg].
+  cameras:
+    front:       {size: [640, 360], pose: [1.60, 0.00, 1.50,   0, -10, 100]}
+    front_left:  {size: [320, 180], pose: [1.10,-0.90, 1.40, -55, -12, 110]}
+    front_right: {size: [320, 180], pose: [1.10, 0.90, 1.40,  55, -12, 110]}
+    back_left:   {size: [320, 180], pose: [-1.05,-0.90,1.42,-115, -12, 110]}
+    back_right:  {size: [320, 180], pose: [-1.05, 0.90,1.42, 115, -12, 110]}
+    back:        {size: [320, 180], pose: [-2.00, 0.00,1.45, 180, -12, 110]}
+lidar:
+  channels: 64
+  rotation_frequency: 10
+  points_per_second: 640000
+  range: 88
+  upper_fov: 12
+  lower_fov: -30
+  pose_xyz: [0.0, 0.0, 2.2]
+bev:
+  # FLU. Rows run from +80 to -40 m, columns from +30 to -30 m.
+  x_bounds_m: [-40.0, 80.0]
+  y_bounds_m: [-30.0, 30.0]
+  shape: [160, 120]
+  occupancy_z_edges_m: [-1.0, -0.35, 0.0, 0.35, 0.75, 1.25, 1.8, 2.5, 4.5]
+  future_seconds: [0.5, 1.0, 1.5, 2.0, 2.5]
+calibration:
+  minimum_frames: 20
+  ground_annulus_m: [5.0, 30.0]
+  min_coverage_fraction: 0.995
+  max_gap_degrees: 2
+  max_lane_p95_px: 4.0
+  max_mount_error: 0.001
+  min_lane_matches_per_camera: 25
