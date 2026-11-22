@@ -4,11 +4,20 @@ from pathlib import Path
 import carla,cv2,numpy as np
 from .geometry import CAMS,NAMES,projection_tables,raster
 from .scenarios import routes
+from .navigation import sd_routes
 
 DT=.05
 N=25
 WEATHER=('ClearNoon','ClearSunset','CloudyNoon','WetCloudyNoon')
 SEM=np.dtype([('xyz','<f4',(3,)),('cos','<f4'),('obj','<u4'),('tag','<u4')])
+COLLECTION_MAPS=('Town10HD_Opt','Town12')
+
+def check_versions(client):
+    client_version=client.get_client_version()
+    server_version=client.get_server_version()
+    if client_version!=server_version or server_version.split('-',1)[0]!='1.0':
+        raise RuntimeError(f'Expected matching CARLA 1.0 builds, got client {client_version!r}, server {server_version!r}')
+    return client_version,server_version
 
 def write(path,obj):
     path.write_text(json.dumps(obj,indent=2,ensure_ascii=False),encoding='utf8')
@@ -27,18 +36,21 @@ def box(actor,pose):
     a=np.array([[p.x,p.y,p.z] for p in pts])
     return a[[0,4,6,2]] if np.ptp(a[[0,4,6,2],2])<.5 else a[np.argsort(a[:,2])[:4]]
 
-def episode(world,tm,road_map,selection,kind,weather,seed,out):
+def episode(world,tm,road_map,selection,kind,weather,seed,out,coarse,poles):
     rng=np.random.default_rng(seed)
     i,wp,route,kappa,pole,fork,branch=selection
     lib=world.get_blueprint_library(); actors=[];sensors=[];qs=[];trace=[]; sem_points=[]
     folder=out/kind;folder.mkdir()
-    frames=[]; times=[]; arc=0.; prev=None;first=None
+    frames=[]; times=[]; scene_frames=[]; arc=0.; prev=None;first=None
     world.set_weather(getattr(carla.WeatherParameters,weather))
     try:
         tf=wp.transform;tf.location.z+=.38
         perturb=.42 if kind=='straight' else 0.
         right=tf.get_right_vector();tf.location.x+=right.x*perturb;tf.location.y+=right.y*perturb
-        ego=world.spawn_actor(lib.find('vehicle.lincoln.mkz'),tf); actors.append(ego)
+        ego_bp=lib.find('vehicle.lincoln.mkz')
+        if road_map.name.rsplit('/',1)[-1]=='Town12':
+            ego_bp.set_attribute('role_name','hero')
+        ego=world.spawn_actor(ego_bp,tf); actors.append(ego)
         candidates=road_map.get_spawn_points();rng.shuffle(candidates)
         candidates=sorted(candidates,key=lambda s:not 24<s.location.distance(tf.location)<110)
         for other in candidates:
@@ -89,6 +101,9 @@ def episode(world,tm,road_map,selection,kind,weather,seed,out):
                 xyz_world=loc@pose[:3,:3].T+pose[:3,3]
                 sem_points.append((fid,xyz_world.astype(np.float32),sem['tag'][use].copy()))
             if keep:
+                scene_frames.append(dict(yaw_from_start_deg=yaw_delta,
+                                         in_junction=bool(road_map.get_waypoint(t.location).is_junction),
+                                         nearest_pole_m=float(np.linalg.norm(poles[:,:2]-pose[:2,3],axis=1).min()) if len(poles) else None))
                 frame_dir=folder/f'{fid:07d}'; frame_dir.mkdir()
                 for name,img in zip(NAMES,bundle[:3]):
                     bgr=np.frombuffer(img.raw_data,np.uint8).reshape(224,384,4)[:,:,:3]
@@ -101,7 +116,12 @@ def episode(world,tm,road_map,selection,kind,weather,seed,out):
                 frames.append(fid);times.append(time.perf_counter()-t0)
             if len(frames)==N and fid-trace[first+N-1][0]>=80 and arc-trace[first+N-1][3]>=61:
                 break
-        if len(frames)!=N or arc-trace[first+N-1][3]<60:raise RuntimeError(f'{kind}: insufficient driven future {arc:.1f} m, frames={len(frames)}')
+        if len(frames)!=N:
+            raise RuntimeError(f'{kind}: retained {len(frames)}/{N} synchronized frames')
+        tail_m=arc-trace[first+N-1][3]
+        tail_ticks=trace[-1][0]-frames[-1]
+        if tail_m<60 or tail_ticks<80:
+            raise RuntimeError(f'{kind}: final frame has only {tail_m:.1f} m and {tail_ticks} ticks of driven future')
         np.savez_compressed(folder/'teacher.npz',fid=[a[0] for a in trace],pose=[a[1] for a in trace],
                             boxes=np.asarray([a[2] for a in trace],np.float32),actor_ids=[a.id for a in actors[1:]],
                             sem_fid=[a[0] for a in sem_points],sem_count=[len(a[1]) for a in sem_points],
@@ -110,7 +130,8 @@ def episode(world,tm,road_map,selection,kind,weather,seed,out):
                   planned_peak_kappa_first_46m=kappa,nearest_pole_xy_m=pole,first_choices_m=fork,
                   npc_count=len(actors)-1,perturb_m=perturb,frames=frames,dt=DT,elapsed=time.perf_counter()-begin,
                   retained_tick_s=times,driven_m=arc,sim_ticks=len(trace),episode_group=f'{road_map.name}/{wp.road_id}/{wp.lane_id}/{i}',
-                  drift_phase=float(rng.uniform(-np.pi,np.pi)))
+                  drift_phase=float(rng.uniform(-np.pi,np.pi)),sd_route_world=coarse.tolist(),scene_frames=scene_frames,
+                  final_frame_future_m=tail_m,final_frame_future_ticks=tail_ticks)
         write(folder/'episode.json',meta);print(kind,'OK',len(frames),round(arc),len(trace),flush=True)
     finally:
         for a in sensors:
@@ -121,27 +142,40 @@ def episode(world,tm,road_map,selection,kind,weather,seed,out):
 def main():
     p=argparse.ArgumentParser();p.add_argument('--port',type=int,default=2460);p.add_argument('--out',type=Path,required=True)
     p.add_argument('--weather-seed',type=int,default=1)
+    p.add_argument('--map',choices=COLLECTION_MAPS,default='Town10HD_Opt')
+    p.add_argument('--sd-routes',type=Path,help='Independent map-specific road survey (required for Town12)')
     p.add_argument('--only',nargs='+',choices=('straight','curve','fork','pole'));args=p.parse_args()
-    out=args.out;out.mkdir(exist_ok=True,parents=True)
     c=carla.Client('127.0.0.1',args.port);c.set_timeout(45)
-    if c.get_server_version()!='0.10.0':raise RuntimeError(c.get_server_version())
-    world=c.get_world();road_map=world.get_map(); orig=world.get_settings();tm=c.get_trafficmanager(args.port+5)
-    if not road_map.name.endswith('Town10HD_Opt'):raise ValueError('This pilot uses Town10HD_Opt survey coordinates')
+    client_version,server_version=check_versions(c)
+    world=c.get_world();road_map=world.get_map()
+    actual_map=road_map.name.rsplit('/',1)[-1]
+    if actual_map!=args.map:
+        raise ValueError(f'Load {args.map} before acquisition (active map: {actual_map})')
+    coarse=sd_routes(actual_map,args.sd_routes)
+    out=args.out;out.mkdir(exist_ok=True,parents=True)
+    previous_sim=out/'sim.json'
+    if previous_sim.exists():
+        old=json.loads(previous_sim.read_text(encoding='utf8'))
+        episode_maps={json.loads(ep.read_text(encoding='utf8'))['map'] for ep in out.glob('*/episode.json')}
+        if old.get('client')!=client_version or old.get('server')!=server_version or episode_maps-{road_map.name} or old.get('map',road_map.name)!=road_map.name:
+            raise ValueError(f'Use a new output directory for {road_map.name} on CARLA {server_version}: {out}')
+    orig=world.get_settings();tm=c.get_trafficmanager(args.port+5)
     old_weather=world.get_weather()
     try:
         cfg=world.get_settings();cfg.synchronous_mode=True;cfg.fixed_delta_seconds=DT;cfg.no_rendering_mode=False;world.apply_settings(cfg)
         tm.set_synchronous_mode(True);tm.set_random_device_seed(714)
-        poles=[b.location for b in world.get_level_bbs(carla.CityObjectLabel.Poles) if min(b.extent.x,b.extent.y)<.8]
-        selected=routes(road_map,np.array([[p.x,p.y,p.z] for p in poles]))
+        poles=np.asarray([[b.location.x,b.location.y,b.location.z] for b in world.get_level_bbs(carla.CityObjectLabel.Poles)
+                          if min(b.extent.x,b.extent.y)<.8]).reshape(-1,3)
+        selected=routes(road_map,poles,coarse if args.sd_routes else None,args.only)
         (out/'map.xodr').write_text(road_map.to_opendrive(),encoding='utf8')
-        write(out/'sim.json',dict(server=c.get_server_version(),client=c.get_client_version(),maps=c.get_available_maps(),quality='Epic',
+        write(out/'sim.json',dict(server=server_version,client=client_version,map=road_map.name,maps=c.get_available_maps(),quality='Epic',
                                   tags={k:int(getattr(carla.CityObjectLabel,k)) for k in ('Poles','Walls','Fences','GuardRail','TrafficSigns','RoadLines','Sidewalks')}))
         weather_order=np.random.default_rng(args.weather_seed).permutation(WEATHER)
         for idx,(kind,s) in enumerate(selected.items()):
             if args.only and kind not in args.only:continue
             if (out/kind/'episode.json').exists():continue
             print('starting',kind,s[0],s[3:6],flush=True)
-            episode(world,tm,road_map,s,kind,str(weather_order[idx]),715+idx,out)
+            episode(world,tm,road_map,s,kind,str(weather_order[idx]),715+idx,out,coarse[kind],poles)
     finally:
         tm.set_synchronous_mode(False);world.apply_settings(orig);world.set_weather(old_weather)
 

@@ -35,17 +35,17 @@ def raster(scan):
     return np.stack((lo,hi,counts((z>=.2)&(z<1.2)),counts((z>=1.2)&(z<=2.5)),
                      np.bincount(idx,power,minlength=16384)/np.maximum(n,1),np.log1p(n))).reshape(6,128,128).astype(np.float16)
 
-def projection_tables(extrinsics,heights=Z):
+def projection_tables(extrinsics,heights=Z,sizes=((W,H),)*3):
     tables=[];valid=[]
     for height in heights:
         points=np.stack((X,-Y,np.broadcast_to(height,X.shape)),axis=-1)
         coords=[];masks=[]
-        for cam,pose in zip(CAMS,extrinsics):
+        for cam,pose,(width,height_px) in zip(CAMS,extrinsics,sizes):
             p=(points-pose[:3,3])@pose[:3,:3]
             depth=np.maximum(p[...,0],1e-6)
-            focal=W/(2*np.tan(np.deg2rad(cam[-1]/2)))
-            uv=np.stack((W/2+focal*p[...,1]/depth,H/2-focal*p[...,2]/depth),axis=-1)
-            mask=(p[...,0]>0)&(uv[...,0]>=0)&(uv[...,0]<W-1)&(uv[...,1]>=0)&(uv[...,1]<H-1)
+            focal=width/(2*np.tan(np.deg2rad(cam[-1]/2)))
+            uv=np.stack((width/2+focal*p[...,1]/depth,height_px/2-focal*p[...,2]/depth),axis=-1)
+            mask=(p[...,0]>0)&(uv[...,0]>=0)&(uv[...,0]<width-1)&(uv[...,1]>=0)&(uv[...,1]<height_px-1)
             coords.append(np.where(mask[...,None],uv,-1).astype(np.float32));masks.append(mask)
         tables.append(coords);valid.append(masks)
     return np.asarray(tables),np.asarray(valid)

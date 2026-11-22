@@ -14,6 +14,9 @@
 !/viewer/
 !/v1_dual_system/
 !/v2_mapless_wa/
+!/v7_mapless_wa/
+/v7_mapless_wa/*
+!/v7_mapless_wa/config.yaml
 
 # Generated/runtime directories anywhere
 **/__pycache__/

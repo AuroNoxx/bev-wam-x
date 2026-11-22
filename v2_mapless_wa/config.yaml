@@ -1,0 +1,36 @@
+simulator: CARLA 1.0
+engine: UE 5.8
+rendering:
+  quality_level: High
+  renderer: dx12
+  windowed: true
+  window_width: 640
+  window_height: 360
+rgb:
+  sizes:
+    front: [768, 448]
+    front_left: [384, 224]
+    front_right: [384, 224]
+  preprocessing_gamma: 0.5
+  stored_rgb: raw
+  projection_heights_m: [-0.2, 0.0, 0.6, 1.4, 2.4]
+  enable_postprocess_effects: false
+  # Per camera: x/y/z (m), yaw/pitch/horizontal FOV (degrees).
+  front: [1.6, 0.0, 1.5, 0, -10, 100]
+  front_left: [1.1, -0.9, 1.4, -45, -22, 110]
+  front_right: [1.1, 0.9, 1.4, 45, -22, 110]
+lidar:
+  channels: 64
+  rotation_hz: 20
+fixed_delta_seconds: 0.05
+navigation:
+  source: independent_road_survey
+  localization: [gnss, imu_compass]
+  lookahead_m: [20, 40, 60]
+  max_common_drift_m: 2.5
+  drift_limit: surveyed_road_width
+  tactical_intent_separate_from_route_instruction: true
+action_log:
+  order: [steer, throttle, brake]
+  requested_at: observation_frame
+  verify_applied_at: next_simulation_frame

@@ -4,7 +4,7 @@ from pathlib import Path
 import carla,cv2,numpy as np
 from .geometry import local,pixels,polygon,sample_arc
 from .scenarios import xyz,same_direction
-from .navigation import navigation,sd_route,gps_drift
+from .navigation import DirectedRoute,gps_drift
 
 def right(w):
     r=w.transform.get_right_vector()
@@ -15,13 +15,13 @@ def ends(w):
     return xyz(w)-radius,xyz(w)+radius
 
 def marked(mark):
-    return str(mark.type).lower() not in ('none','other') and mark.width>0
+    return mark is not None and str(mark.type).lower() not in ('none','other') and mark.width>0
 
 def projection(pts3,pose):
     return local(pts3,pose)[...,:2]
 
 class Surfaces:
-    def __init__(self,m):
+    def __init__(self,m,indexed=False):
         quads=[]; borders=[]; curb=[]
         for w in m.generate_waypoints(1.):
             if w.lane_type!=carla.LaneType.Driving:continue
@@ -34,21 +34,48 @@ class Surfaces:
                 curb.append([p is not None and p.lane_type==carla.LaneType.Sidewalk for p in adj])
         self.quads=np.asarray(quads);self.centers=self.quads.mean(1)
         self.borders=np.asarray(borders);self.curb=np.asarray(curb)
+        self.tree=None
+        if indexed:
+            from scipy.spatial import cKDTree
+            self.tree=cKDTree(self.centers)
 
     def draw(self,pose):
         mask=np.zeros((4,128,128),np.uint8)
-        centers=local(self.centers,pose)
+        indices=np.asarray(self.tree.query_ball_point(pose[:3,3],96),dtype=int) if self.tree is not None else slice(None)
+        centers=local(self.centers[indices],pose)
         near=(centers[:,0]>-25)&(centers[:,0]<88)&(abs(centers[:,1])<27)&(abs(centers[:,2])<3)
-        pts=local(self.quads[near],pose)
+        indices=np.flatnonzero(near) if self.tree is None else indices[near]
+        pts=local(self.quads[indices],pose)
         uv=np.rint(pixels(pts[...,:2])*16).astype(np.int32)
-        for q,mark,curb in zip(uv,self.borders[near],self.curb[near]):
+        for q,mark,curb in zip(uv,self.borders[indices],self.curb[indices]):
             cv2.fillConvexPoly(mask[0],q,1,shift=4)
             for side,(i,j) in enumerate(((0,3),(1,2))):
                 if mark[side]:cv2.line(mask[1],q[i],q[j],1,1,shift=4)
                 if curb[side]:cv2.line(mask[2],q[i],q[j],1,1,shift=4)
         return mask
 
-def map_vectors(m,pose,driven,static,mask):
+def outer_edge(w,side):
+    """OpenDRIVE carriageway edge, including contiguous same-direction lanes and shoulder."""
+    direction=right(w)
+    sign=-1 if side=='left' else 1
+    edge=xyz(w)+sign*direction*w.lane_width/2
+    seen={w.lane_id}
+    while True:
+        n=w.get_left_lane() if side=='left' else w.get_right_lane()
+        if n is None or n.lane_id in seen or n.lane_id*w.lane_id<=0:
+            break
+        if n.lane_type not in (carla.LaneType.Driving,carla.LaneType.Shoulder,carla.LaneType.Parking):
+            break
+        candidate=xyz(n)+sign*right(n)*n.lane_width/2
+        if (candidate-edge)@direction*sign<-.05:
+            break
+        edge=candidate
+        seen.add(n.lane_id)
+        w=n
+    return edge
+
+
+def map_vectors(m,pose,driven,static,mask,hard_sources=None):
     w=m.get_waypoint(carla.Location(*pose[:3,3]),lane_type=carla.LaneType.Driving)
     ref=[w]
     for i in range(1,64):
@@ -77,7 +104,7 @@ def map_vectors(m,pose,driven,static,mask):
             n=opts[0];a,b=ends(endpoint);c,d=ends(n)
             polygon(mask[3],projection(np.array([a,b,d,c]),pose));endpoint=n
     for j,s in enumerate(targets):
-        if s>station[-1]:continue
+        if len(ref)<2 or s>station[-1]:continue
         k=min(np.searchsorted(station,s,side='right')-1,len(ref)-2)
         w,n=ref[k:k+2]; f=(s-station[k])/max(1e-6,station[k+1]-station[k])
         for idx,get in ((0,lambda p:xyz(p)),(1,lambda p:ends(p)[0]),(2,lambda p:ends(p)[1]),
@@ -92,20 +119,42 @@ def map_vectors(m,pose,driven,static,mask):
         for idx,sgn in ((3,-1),(4,1)):
             delta=static-center; side=delta@r*sgn
             take=(abs(delta@tangent)<1.6)&(side>w.lane_width*.35)&(side<18)
+            if hard_sources is not None:
+                name='left' if idx==3 else 'right'
+                edge=projection((1-f)*outer_edge(w,name)+f*outer_edge(n,name),pose)
+                width=(edge-center)@r*sgn
+                take &= (side>=width-1.5)&(side<=width+3.0)
+                if not w.is_junction and not n.is_junction and width>.7 and abs(edge[1])<19.2 and -16<edge[0]<80:
+                    lines[idx,j]=edge
+                    valid[idx,j]=True
+                    hard_sources[idx-3,j]=1
             # The nearest surveyed hard surface in this cross section.
             if take.any():
                 points=static[take];lines[idx,j]=points[side[take].argmin()];valid[idx,j]=True
+                if hard_sources is not None:
+                    hard_sources[idx-3,j]=2
+    if hard_sources is not None:
+        for k in (3,4):
+            for j in range(1,20):
+                if valid[k,j-1:j+1].all() and np.linalg.norm(lines[k,j]-lines[k,j-1])<6:
+                    uv=np.rint(pixels(lines[k,j-1:j+1])*16).astype(np.int32)
+                    cv2.line(mask[2],uv[0],uv[1],1,1,shift=4)
     return lines,valid
 
 def save_episode(folder,m,surf,tags):
     meta=json.loads((folder/'episode.json').read_text())
-    coarse=sd_route(meta['scenario'])
+    with np.load(folder/'survey.npz') as survey:
+        route=[m.get_waypoint_xodr(int(road),int(lane),float(station)) for road,lane,station in survey['route']]
+    if any(w is None for w in route):
+        raise RuntimeError(f'{folder}: surveyed waypoint could not be resolved')
+    directed=DirectedRoute(route)
     with np.load(folder/'teacher.npz') as f:data={k:f[k] for k in f}
     ids=data['fid'];poses=data['pose'];boxes=data['boxes']; assert np.all(np.diff(ids)==1)
     sidx=np.repeat(data['sem_fid'],data['sem_count'])
     # Disjoint survey for static boundaries: no current pilot-frame lidar returns in labels.
     use=(sidx>max(meta['frames']))&np.isin(data['sem_tag'],[tags[k] for k in ('Poles','Walls','Fences','GuardRail','TrafficSigns')])
     world=data['sem_xyz'][use]
+    progress=0.
     for fid in meta['frames']:
         fd=folder/f'{fid:07d}';i=int(fid-ids[0]);pose=poses[i]
         path=projection(sample_arc(poses[i:,:3,3],np.arange(1,41)*1.5),pose).astype(np.float32)
@@ -125,7 +174,8 @@ def save_episode(folder,m,surf,tags):
         static=np.column_stack((80-(rows+.5)*.75,19.2-(cols+.5)*.3))
         lines,valid=map_vectors(m,pose,poses[i:,:3,3],static,mask)
         drift=gps_drift(meta['drift_phase'],.05*i)
-        nav=navigation(coarse,pose,drift)
+        progress,_=directed.match(pose,progress)
+        nav=directed.anchors(progress,pose,drift,require_full=True)
         np.savez_compressed(fd/'input.npz',sd_nav=nav,cmd_one_hot=np.array([1,0,0],np.uint8))
         np.savez_compressed(fd/'labels.npz',map_lines=lines,exists=valid.any(1),point_valid=valid,
                             masks=mask,path_gt=path,p_occ=occ)
