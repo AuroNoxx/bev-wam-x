@@ -18,8 +18,8 @@ from v3_world_model import collect_v3
 from v3_world_model.calibration_probe import coverage, ego_silhouette, lane_reprojection, metrics_pass, mosaic, RULES
 from v3_world_model.data import Clips
 from v3_world_model.geometry import (CONFIG_SHA256, DT, H, W, Z, NAMES, SIZES, camera_mounts,
-                                     carla_pose, delta_error, ego_delta, grid, metric, pixels,
-                                     project, projection_tables, world_at)
+                                     carla_pose, delta_error, ego_delta, grid, lidar_bev, metric,
+                                     pixels, project, projection_tables, world_at)
 from v3_world_model.labels import decode_boxes, encode_boxes, exclusive_markings, object_slots
 from v3_world_model.objectives import LANE_POS_WEIGHT, OCC_POS_WEIGHT, segmentation, stage31_losses
 from v3_world_model.observations import AUDIT_SENSORS, OBS_FIELDS, command_vector, validate_observation
@@ -128,6 +128,11 @@ class Stage3PrepTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "Town04"):
                     collect_v3.main()
                 called.assert_not_called()
+        dense_cell = np.tile([10., 0., 1.5, .8], (26_000, 1)).astype(np.float32)
+        bev = lidar_bev(dense_cell)
+        self.assertEqual(bev.dtype, np.float16)
+        self.assertTrue(np.isfinite(bev).all())
+        self.assertLessEqual(float(bev.max()), float(np.finfo(np.float16).max))
 
     def test_labels_and_events(self):
         masks = np.ones((4, H, W), np.uint8)

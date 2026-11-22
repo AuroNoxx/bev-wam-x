@@ -138,6 +138,7 @@ def lidar_bev(scan):
         return np.bincount(index[select], minlength=H * W) / (DX * DY)
 
     mean = np.bincount(index, weights=intensity, minlength=H * W) / np.maximum(n, 1)
-    return np.stack((lo, hi, density((z >= .2) & (z < 1.2)),
-                     density((z >= 1.2) & (z <= 2.5)), mean, np.log1p(n))
-                    ).reshape(6, H, W).astype(np.float16)
+    limit = float(np.finfo(np.float16).max)
+    channels = np.stack((lo, hi, density((z >= .2) & (z < 1.2)),
+                         density((z >= 1.2) & (z <= 2.5)), mean, np.log1p(n)))
+    return np.clip(channels, -limit, limit).reshape(6, H, W).astype(np.float16)
