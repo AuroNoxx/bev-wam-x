@@ -23,7 +23,7 @@ CURB_RGB = (.36, .43, .52, 1.)
 FACES = np.array([[0, 3, 2, 1], [4, 5, 6, 7], [0, 1, 5, 4], [1, 2, 6, 5], [2, 3, 7, 6], [3, 0, 4, 7]], dtype=np.int64)
 QUAD_TRI = np.array([0, 1, 2, 0, 2, 3], dtype=np.int64)
 PRESETS = (
-    ("CHASE", 0., 29., 42., (12., 0., .42), 68.),
+    ("CHASE", -12., 13., 28., (17., 0., .65), 62.),
     ("ELEVATED", 0., 52., 43., (17., 0., .20), 67.),
     ("TOP", 0., 76., 38., (12., 0., 0.), 40.),
 )
@@ -96,7 +96,7 @@ def prediction_scene(pred, *, speed=0., cruise=0., intent="Follow", alternatives
                 intent=intent, alternatives=alternatives, decelerating=decelerating,
                 steer=steer, throttle=throttle, brake=brake, accel_lon=accel_lon,
                 thw=thw, infer_ms=infer_ms, limit=limit, nav_hint=nav_hint, mode=mode,
-                source="model", object_scores=scores)
+                source="model", object_scores=scores, fit_geometry=mode == "LIVE")
 
 
 def from_capture(frame):
@@ -438,8 +438,8 @@ class SceneMesh:
         self.opaque = []
         self.blend = [RANGE_RINGS_11] if len(RANGE_RINGS_11) else []
 
-    def mask_surface(self, mask, z, rgba, mat=.05):
-        xy = surface_triangles(mask)
+    def mask_surface(self, mask, z, rgba, mat=.05, *, fit=False):
+        xy = surface_triangles(mask, fit=fit)
         if not len(xy):
             return
         verts = np.column_stack((xy, np.full(len(xy), z, np.float32)))
@@ -447,8 +447,8 @@ class SceneMesh:
         col = np.broadcast_to(np.asarray(rgba, np.float32), (len(verts), 4))
         self.opaque.append(np.concatenate((verts, n, col, np.full((len(verts), 1), mat, np.float32)), axis=-1))
 
-    def lane_strips(self, mask, z, rgba, width):
-        sweep = sweep_segments(mask)
+    def lane_strips(self, mask, z, rgba, width, *, fit=False):
+        sweep = sweep_segments(mask, fit=fit)
         if sweep is None:
             return
         xy, norm, segments = sweep
@@ -464,8 +464,8 @@ class SceneMesh:
             np.zeros((len(verts), 1), np.float32),
         ), axis=-1))
 
-    def curb_barriers(self, mask, z_base=-.01, height=.20, base_half=.25, top_half=.13):
-        sweep = sweep_segments(mask)
+    def curb_barriers(self, mask, z_base=-.01, height=.20, base_half=.25, top_half=.13, *, fit=False):
+        sweep = sweep_segments(mask, fit=fit)
         if sweep is None:
             return
         xy, norm, segments = sweep
@@ -565,14 +565,15 @@ def build_scene(scene, show_occupancy=False):
     mesh = SceneMesh()
     ground_q = np.array([[[115., 75., -.035], [115., -75., -.035], [-45., -75., -.035], [-45., 75., -.035]]], np.float32)
     mesh.opaque.append(_quads_to_tris_batch(ground_q, (.055, .072, .098, 1.), 0.))
-    mesh.mask_surface(masks[0], 0., DRIVABLE_RGB, mat=.05)
-    mesh.lane_strips(masks[1], .014, DASHED_RGB, width=.20)
-    mesh.lane_strips(masks[2], .018, SOLID_RGB, width=.24)
+    fit = scene.get("fit_geometry", False)
+    mesh.mask_surface(masks[0], 0., DRIVABLE_RGB, mat=.05, fit=fit)
+    mesh.lane_strips(masks[1], .014, DASHED_RGB, width=.20, fit=fit)
+    mesh.lane_strips(masks[2], .018, SOLID_RGB, width=.24, fit=fit)
     # CARLA junction labels can contain boundaries internal to overlapping lane strips.
     # Extrude curbs only near an actual drivable/non-drivable interface.
     interface = cv2.morphologyEx((masks[0] >= .5).astype(np.uint8), cv2.MORPH_GRADIENT,
                                  cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)))
-    mesh.curb_barriers(masks[3] * interface)
+    mesh.curb_barriers(masks[3] * interface, fit=fit)
 
     decel = scene.get("decelerating", np.zeros(OBJECT_SLOTS, dtype=bool))
     speed = float(scene.get("speed", 0.))

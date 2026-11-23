@@ -407,7 +407,7 @@ class Stage3PrepTests(unittest.TestCase):
 
     def test_object_gradient_and_branch_geometry(self):
         from v3_world_model.objectives import object_focal_loss
-        from v3_world_model.sr_geometry import centerlines, surface_triangles, temporal_probabilities
+        from v3_world_model.sr_geometry import centerlines, fit_curve, surface_triangles, temporal_probabilities
         logits = torch.zeros(32, requires_grad=True)
         target = torch.zeros_like(logits)
         target[0] = 1
@@ -419,11 +419,18 @@ class Stage3PrepTests(unittest.TestCase):
         branches = centerlines(mask)
         self.assertEqual(len(branches), 3)
         self.assertGreater(max(np.ptp(path[:, 1]) for path in branches), 20)
+        for path in branches:
+            np.testing.assert_allclose(fit_curve(path)[[0, -1]], path[[0, -1]], atol=1e-5)
+        x = np.arange(21, dtype=np.float32)
+        wavering = np.column_stack((x, .28 * np.sin(x * np.pi / 2)))
+        self.assertLess(np.abs(fit_curve(wavering)[:, 1]).max(), .08)
         road = np.ones((H,W), np.uint8)
         road[60:100,45:75] = 0
-        triangles = surface_triangles(road).reshape(-1,3,2)
         hole = tuple(map(float,metric(np.array([60,80]))))
-        self.assertTrue(all(cv2.pointPolygonTest(tri, hole, False) < 0 for tri in triangles))
+        for fit in (False, True):
+            triangles = surface_triangles(road, fit=fit).reshape(-1,3,2)
+            self.assertTrue(len(triangles))
+            self.assertTrue(all(cv2.pointPolygonTest(tri, hole, False) < 0 for tri in triangles))
         prob = np.zeros((4,H,W), np.float32)
         prev = prob.copy()
         prev[:,80,60] = 1

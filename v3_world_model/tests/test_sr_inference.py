@@ -51,14 +51,17 @@ class SRInferenceTests(unittest.TestCase):
         scene['boxes'][0] = [20, 0, 1, 4, 2, 2, 0, 0, 0, 0, 1]
         self.assertNotEqual(summary, perception_summary(scene))
 
-    def test_renderer_does_not_cap_number_of_vehicles(self):
+    def test_lane_fitting_preserves_overlapping_vehicle_predictions(self):
         scene = synthetic_scene()
         scene['boxes'][:] = 0
+        scene['fit_geometry'] = True
         for i in range(4):
-            scene['boxes'][i] = [20 + i, -3.5*i, 1, 4, 2, 2, 0, 0, 0, 0, 1]
+            scene['boxes'][i] = [20 + i, -.3 * i, 1, 4, 2, 2, 0, 0, 0, 0, 1]
+        expected = scene['boxes'][:4].copy()
         with patch.object(SceneMesh, 'vehicle') as vehicle:
             build_scene(scene)
         self.assertEqual(vehicle.call_count, 5)
+        np.testing.assert_array_equal([call.args[0] for call in vehicle.call_args_list[:4]], expected)
 
 
 if __name__ == '__main__':
