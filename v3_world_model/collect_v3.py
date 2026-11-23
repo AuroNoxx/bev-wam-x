@@ -262,7 +262,8 @@ def write_observation(folder, fid, bundle, pose, prev, scan, sensor_poses, lidar
              lidar_angle=np.float64(lidar_angle))
 
 
-def episode(carla, world, tm, surfaces, route, scenario, count, rng, folder, town, server, seed, index):
+def episode(carla, world, tm, surfaces, route, scenario, count, rng, folder, town, server, seed, index,
+            traffic_factory=spawn_traffic, audit_frame=None):
     spawn, path, xy, _, _, _, route_hash = route
     ego_bp = world.get_blueprint_library().find("vehicle.lincoln.mkz")
     ego_bp.set_attribute("role_name", "hero")
@@ -278,7 +279,7 @@ def episode(carla, world, tm, surfaces, route, scenario, count, rng, folder, tow
     weather = WEATHERS[(seed + index + index // len(WEATHERS)) % len(WEATHERS)]
     try:
         world.set_weather(getattr(carla.WeatherParameters, weather))
-        spawn_traffic(carla, world, tm, ego, route, scenario, rng, npcs)
+        traffic_factory(carla, world, tm, ego, route, scenario, rng, npcs)
         folder.mkdir()
         with Rig(carla, world, ego) as rig:
             rig.cameras()
@@ -332,6 +333,8 @@ def episode(carla, world, tm, surfaces, route, scenario, count, rng, folder, tow
                 state_lane = np.array([waypoint.road_id, waypoint.lane_id, int(waypoint.is_junction)],
                                       dtype=np.int64) if waypoint else np.zeros(3, np.int64)
                 boxes, box_ids = object_slots(current, ids)
+                if audit_frame is not None:
+                    audit_frame(waypoint, boxes, fid)
                 targets = dict(lanes=surfaces.masks(pose), vectors=vec, vector_valid=vec_valid,
                                vector_exists=vec_exists, boxes=boxes, box_ids=box_ids, occupancy=occupancy(scan, current),
                                ego_state=state, thw=np.float32(thw),

@@ -10,6 +10,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 from .geometry import H, W, metric
+from .sr_geometry import sweep_segments, surface_triangles, temporal_probabilities
 from .labels import OBJECT_SLOTS
 from .qc_v3 import load_npz
 
@@ -22,8 +23,8 @@ CURB_RGB = (.36, .43, .52, 1.)
 FACES = np.array([[0, 3, 2, 1], [4, 5, 6, 7], [0, 1, 5, 4], [1, 2, 6, 5], [2, 3, 7, 6], [3, 0, 4, 7]], dtype=np.int64)
 QUAD_TRI = np.array([0, 1, 2, 0, 2, 3], dtype=np.int64)
 PRESETS = (
-    ("CHASE", 0., 21., 17., (6.5, 0., .42), 48.),
-    ("ELEVATED", 8., 36., 23., (10., 0., .20), 44.),
+    ("CHASE", 0., 29., 42., (12., 0., .42), 68.),
+    ("ELEVATED", 0., 52., 43., (17., 0., .20), 67.),
     ("TOP", 0., 76., 38., (12., 0., 0.), 40.),
 )
 INTENT_LABELS = {
@@ -64,7 +65,7 @@ class FontPack:
 
 
 def prediction_scene(pred, *, speed=0., cruise=0., intent="Follow", alternatives=(),
-                     previous_scene=None, steer=0., throttle=0., brake=0.,
+                     previous_scene=None, ego_motion=None, steer=0., throttle=0., brake=0.,
                      accel_lon=0., thw=None, infer_ms=None, limit=80.,
                      nav_hint="", mode="LIVE"):
     """Convert one batched model result into the unbatched renderer contract."""
@@ -74,7 +75,8 @@ def prediction_scene(pred, *, speed=0., cruise=0., intent="Follow", alternatives
     geom = as_numpy(pred["boxes"])
     yaw = np.arctan2(geom[:, 6], geom[:, 7])
     cls = as_numpy(pred["cls_logits"]).argmax(axis=-1)
-    visible = as_numpy(pred["obj_logits"]) > 0.
+    scores = as_numpy(pred["obj_logits"].float().sigmoid())
+    visible = scores > .5
     boxes = np.column_stack((geom[:, :6], yaw, geom[:, 8:10], cls, visible)).astype(np.float32)
     decelerating = np.zeros(OBJECT_SLOTS, dtype=bool)
     if previous_scene is not None:
@@ -85,12 +87,16 @@ def prediction_scene(pred, *, speed=0., cruise=0., intent="Follow", alternatives
                 distances = np.linalg.norm(candidates[:, :2] - boxes[i, :2], axis=1)
                 match = candidates[distances.argmin()]
                 decelerating[i] = distances.min() < 3. and match[7] - boxes[i, 7] > .38
-    return dict(lanes=as_numpy(pred["lane_logits"]) > 0., boxes=boxes,
+    probs = as_numpy(pred["lane_logits"].float().sigmoid())
+    if mode == "LIVE" and previous_scene is not None:
+        probs = temporal_probabilities(probs, previous_scene.get("lane_probs"), ego_motion)
+    return dict(lanes=probs > .5, lane_probs=probs, boxes=boxes,
                 future_occupancy=as_numpy(pred["future_occupancy_logits"]) > 0.,
                 trajectory=as_numpy(pred["trajectory"]), speed=speed, cruise=cruise,
                 intent=intent, alternatives=alternatives, decelerating=decelerating,
                 steer=steer, throttle=throttle, brake=brake, accel_lon=accel_lon,
-                thw=thw, infer_ms=infer_ms, limit=limit, nav_hint=nav_hint, mode=mode)
+                thw=thw, infer_ms=infer_ms, limit=limit, nav_hint=nav_hint, mode=mode,
+                source="model", object_scores=scores)
 
 
 def from_capture(frame):
@@ -169,58 +175,6 @@ def glowing_ribbon_mesh(path, width=2.85, z=.052):
                             uv.reshape(-1, 2), np.repeat(rgba, 2, axis=0)), axis=-1).astype(np.float32)
     ids = np.arange(len(verts) - 2)
     return verts[np.column_stack((ids, ids + 1, ids + 2)).ravel()]
-
-
-def _extract_polylines(mask, max_row_gap=1, max_col_jump=3.0):
-    """Convert a 160x120 binary mask into smoothed metric chains + wide horizontal spans."""
-    chains, wide_runs, active = [], [], []
-    for r in range(H):
-        row = mask[r]
-        if not row.any():
-            continue
-        padded = np.r_[False, row.astype(bool), False]
-        edges = np.flatnonzero(padded[1:] != padded[:-1]).reshape(-1, 2)
-        candidates = []
-        for c0, c1 in edges:
-            if c1 - c0 >= 5:
-                wide_runs.append((r, float(c0) - .5, float(c1) - .5))
-            else:
-                candidates.append((r, .5 * (c0 + c1 - 1)))
-        used = [False] * len(candidates)
-        next_active = []
-        for chain in active:
-            last_r, last_u = chain[-1]
-            if r - last_r > max_row_gap:
-                chains.append(chain)
-                continue
-            best_j, best_d = -1, max_col_jump + 1e-6
-            for j, (_, u) in enumerate(candidates):
-                if not used[j]:
-                    d = abs(u - last_u)
-                    if d < best_d:
-                        best_d, best_j = d, j
-            if best_j >= 0:
-                used[best_j] = True
-                chain.append(candidates[best_j])
-                next_active.append(chain)
-            elif r - last_r < max_row_gap:
-                next_active.append(chain)
-            else:
-                chains.append(chain)
-        for j, pt in enumerate(candidates):
-            if not used[j]:
-                next_active.append([pt])
-        active = next_active
-    chains.extend(active)
-    smoothed = []
-    for ch in chains:
-        pts = np.asarray(ch, dtype=np.float32)
-        xy = metric(np.column_stack((pts[:, 1], pts[:, 0])))
-        if len(xy) >= 3:
-            for _ in range(2):
-                xy[1:-1, 1] = .25 * xy[:-2, 1] + .50 * xy[1:-1, 1] + .25 * xy[2:, 1]
-        smoothed.append(xy.astype(np.float32))
-    return smoothed, wide_runs
 
 
 def _tri_normals(tris, outward_center=None):
@@ -485,93 +439,55 @@ class SceneMesh:
         self.blend = [RANGE_RINGS_11] if len(RANGE_RINGS_11) else []
 
     def mask_surface(self, mask, z, rgba, mat=.05):
-        rows, bounds = np.nonzero(np.diff(np.pad(mask.astype(bool), ((0, 0), (1, 1))), axis=1))
-        if not len(rows):
+        xy = surface_triangles(mask)
+        if not len(xy):
             return
-        a, b = bounds.reshape(-1, 2).T - .5
-        row = rows[::2]
-        u = np.stack((a, b, b, a), axis=1)
-        v = row[:, None] + np.array([-.5, -.5, .5, .5])
-        xy = metric(np.stack((u, v), axis=-1))
-        quads = np.concatenate((xy, np.full((*xy.shape[:2], 1), z, np.float32)), axis=-1)
-        verts = quads[:, QUAD_TRI].reshape(-1, 3)
+        verts = np.column_stack((xy, np.full(len(xy), z, np.float32)))
         n = np.broadcast_to(np.array([0., 0., 1.], np.float32), (len(verts), 3))
         col = np.broadcast_to(np.asarray(rgba, np.float32), (len(verts), 4))
         self.opaque.append(np.concatenate((verts, n, col, np.full((len(verts), 1), mat, np.float32)), axis=-1))
 
-    def lane_strips(self, mask, z, rgba, width, max_gap=1):
-        chains, wide_runs = _extract_polylines(mask, max_row_gap=max_gap)
+    def lane_strips(self, mask, z, rgba, width):
+        sweep = sweep_segments(mask)
+        if sweep is None:
+            return
+        xy, norm, segments = sweep
         n_up = np.array([0., 0., 1.], np.float32)
-        for xy in chains:
-            if len(xy) == 1:
-                x0, y0 = xy[0]
-                xy = np.array([[x0 + .35, y0], [x0 - .35, y0]], np.float32)
-            tang = np.gradient(xy, axis=0)
-            norm = np.column_stack((-tang[:, 1], tang[:, 0]))
-            norm /= np.maximum(np.linalg.norm(norm, axis=1, keepdims=True), 1e-6)
-            left = np.column_stack((xy + (width * .5) * norm, np.full(len(xy), z, np.float32)))
-            right = np.column_stack((xy - (width * .5) * norm, np.full(len(xy), z, np.float32)))
-            quads = np.stack((left[:-1], right[:-1], right[1:], left[1:]), axis=1)
-            verts = quads[:, QUAD_TRI].reshape(-1, 3)
-            self.opaque.append(np.concatenate((
-                verts,
-                np.broadcast_to(n_up, (len(verts), 3)),
-                np.broadcast_to(np.asarray(rgba, np.float32), (len(verts), 4)),
-                np.zeros((len(verts), 1), np.float32),
-            ), axis=-1))
-        if wide_runs:
-            r, u0, u1 = np.asarray(wide_runs, np.float32).T
-            u = np.stack((u0, u1, u1, u0), axis=1)
-            v = r[:, None] + np.array([-.18, -.18, .18, .18], np.float32)
-            xy = metric(np.stack((u, v), axis=-1))
-            q3 = np.concatenate((xy, np.full((*xy.shape[:2], 1), z, np.float32)), axis=-1)
-            verts = q3[:, QUAD_TRI].reshape(-1, 3)
-            self.opaque.append(np.concatenate((
-                verts, np.broadcast_to(n_up, (len(verts), 3)),
-                np.broadcast_to(np.asarray(rgba, np.float32), (len(verts), 4)),
-                np.zeros((len(verts), 1), np.float32),
-            ), axis=-1))
+        left = np.column_stack((xy + (width * .5) * norm, np.full(len(xy), z, np.float32)))
+        right = np.column_stack((xy - (width * .5) * norm, np.full(len(xy), z, np.float32)))
+        quads = np.stack((left[segments], right[segments], right[segments+1], left[segments+1]), axis=1)
+        verts = quads[:, QUAD_TRI].reshape(-1, 3)
+        self.opaque.append(np.concatenate((
+            verts,
+            np.broadcast_to(n_up, (len(verts), 3)),
+            np.broadcast_to(np.asarray(rgba, np.float32), (len(verts), 4)),
+            np.zeros((len(verts), 1), np.float32),
+        ), axis=-1))
 
     def curb_barriers(self, mask, z_base=-.01, height=.20, base_half=.25, top_half=.13):
-        chains, wide_runs = _extract_polylines(mask, max_row_gap=3)
+        sweep = sweep_segments(mask)
+        if sweep is None:
+            return
+        xy, norm, segments = sweep
         top_col = (CURB_RGB[0] * 1.08, CURB_RGB[1] * 1.08, CURB_RGB[2] * 1.08, 1.)
         side_col = (CURB_RGB[0] * .86, CURB_RGB[1] * .86, CURB_RGB[2] * .86, 1.)
         bot_col = (CURB_RGB[0] * .65, CURB_RGB[1] * .65, CURB_RGB[2] * .65, 1.)
-        for xy in chains:
-            if len(xy) == 1:
-                x0, y0 = xy[0]
-                xy = np.array([[x0 + .38, y0], [x0 - .38, y0]], np.float32)
-            tang = np.gradient(xy, axis=0)
-            norm = np.column_stack((-tang[:, 1], tang[:, 0]))
-            norm /= np.maximum(np.linalg.norm(norm, axis=1, keepdims=True), 1e-6)
-            bl = np.column_stack((xy + base_half * norm, np.full(len(xy), z_base, np.float32)))
-            br = np.column_stack((xy - base_half * norm, np.full(len(xy), z_base, np.float32)))
-            tl = np.column_stack((xy + top_half * norm, np.full(len(xy), z_base + height, np.float32)))
-            tr = np.column_stack((xy - top_half * norm, np.full(len(xy), z_base + height, np.float32)))
-            rings = np.stack((br, tr, tl, bl), axis=1)  # (K, 4, 3)
-            a, b = rings[:-1], rings[1:]
-            centers = np.repeat((a.mean(axis=1) + b.mean(axis=1)) * .5, 8, axis=0)
-            q_parts = []
-            for j in range(4):
-                jn = (j + 1) % 4
-                q_parts.append(np.stack((a[:, j], a[:, jn], b[:, jn], b[:, j]), axis=1))
-            quads = np.concatenate(q_parts, axis=0)
-            seg_n = len(a)
-            cols = np.concatenate([np.broadcast_to(c, (seg_n, 4)) for c in (side_col, top_col, side_col, bot_col)])
-            mats = np.concatenate([np.full(seg_n, m, np.float32) for m in (.30, .42, .30, .20)])
-            centers = np.repeat(np.tile((a.mean(axis=1) + b.mean(axis=1)) * .5, (4, 1)), 2, axis=0)
-            self.opaque.append(_quads_to_tris_batch(quads, cols, mats, outward_center=centers))
-        if wide_runs:
-            r, u0, u1 = np.asarray(wide_runs, np.float32).T
-            u = np.stack((u0, u1, u1, u0), axis=1)
-            bot_xy = metric(np.stack((u, r[:, None] + np.array([-.24, -.24, .24, .24], np.float32)), axis=-1))
-            top_xy = metric(np.stack((u, r[:, None] + np.array([-.13, -.13, .13, .13], np.float32)), axis=-1))
-            pts = np.concatenate((np.concatenate((bot_xy, np.full((*bot_xy.shape[:2], 1), z_base, np.float32)), axis=-1),
-                                  np.concatenate((top_xy, np.full((*top_xy.shape[:2], 1), z_base + height, np.float32)), axis=-1)), axis=1)
-            quads = pts[:, FACES].reshape(-1, 4, 3)
-            centers = np.repeat(pts.mean(axis=1), 12, axis=0)
-            f_cols = np.tile(np.array([bot_col, top_col, side_col, side_col, side_col, side_col], np.float32), (len(pts), 1))
-            self.opaque.append(_quads_to_tris_batch(quads, f_cols, .35, outward_center=centers))
+        bl = np.column_stack((xy + base_half * norm, np.full(len(xy), z_base, np.float32)))
+        br = np.column_stack((xy - base_half * norm, np.full(len(xy), z_base, np.float32)))
+        tl = np.column_stack((xy + top_half * norm, np.full(len(xy), z_base + height, np.float32)))
+        tr = np.column_stack((xy - top_half * norm, np.full(len(xy), z_base + height, np.float32)))
+        rings = np.stack((br, tr, tl, bl), axis=1)  # (K, 4, 3)
+        a, b = rings[segments], rings[segments+1]
+        q_parts = []
+        for j in range(4):
+            jn = (j + 1) % 4
+            q_parts.append(np.stack((a[:, j], a[:, jn], b[:, jn], b[:, j]), axis=1))
+        quads = np.concatenate(q_parts, axis=0)
+        seg_n = len(a)
+        cols = np.concatenate([np.broadcast_to(c, (seg_n, 4)) for c in (side_col, top_col, side_col, bot_col)])
+        mats = np.concatenate([np.full(seg_n, m, np.float32) for m in (.30, .42, .30, .20)])
+        centers = np.repeat(np.tile((a.mean(axis=1) + b.mean(axis=1)) * .5, (4, 1)), 2, axis=0)
+        self.opaque.append(_quads_to_tris_batch(quads, cols, mats, outward_center=centers))
 
     def vehicle(self, box, color, ego=False, urgent=False, decelerating=False):
         cx, cy, cz, L, W_v, H_v, yaw = [float(v) for v in box[:7]]
@@ -638,7 +554,7 @@ class SceneMesh:
 
 def build_scene(scene, show_occupancy=False):
     """Build GPU lit meshes, glowing ribbon triangles, and backward-compatible 7-float meshes."""
-    masks = np.asarray(scene["lanes"])
+    masks = np.asarray(scene.get("lane_probs", scene["lanes"]))
     boxes = np.asarray(scene["boxes"])
     trajectory = np.asarray(scene["trajectory"])
     if masks.shape != (4, H, W) or boxes.shape != (32, 11) or trajectory.shape != (25, 3):
@@ -650,9 +566,13 @@ def build_scene(scene, show_occupancy=False):
     ground_q = np.array([[[115., 75., -.035], [115., -75., -.035], [-45., -75., -.035], [-45., 75., -.035]]], np.float32)
     mesh.opaque.append(_quads_to_tris_batch(ground_q, (.055, .072, .098, 1.), 0.))
     mesh.mask_surface(masks[0], 0., DRIVABLE_RGB, mat=.05)
-    mesh.lane_strips(masks[1], .014, DASHED_RGB, width=.20, max_gap=1)
-    mesh.lane_strips(masks[2], .018, SOLID_RGB, width=.24, max_gap=2)
-    mesh.curb_barriers(masks[3])
+    mesh.lane_strips(masks[1], .014, DASHED_RGB, width=.20)
+    mesh.lane_strips(masks[2], .018, SOLID_RGB, width=.24)
+    # CARLA junction labels can contain boundaries internal to overlapping lane strips.
+    # Extrude curbs only near an actual drivable/non-drivable interface.
+    interface = cv2.morphologyEx((masks[0] >= .5).astype(np.uint8), cv2.MORPH_GRADIENT,
+                                 cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)))
+    mesh.curb_barriers(masks[3] * interface)
 
     decel = scene.get("decelerating", np.zeros(OBJECT_SLOTS, dtype=bool))
     speed = float(scene.get("speed", 0.))
@@ -761,6 +681,18 @@ def _scene_thw_lead(scene):
     return thw_val, lead_gap, int(len(active))
 
 
+def perception_summary(scene):
+    """Missing detections are not evidence of a clear road."""
+    thw, gap, count = _scene_thw_lead(scene)
+    scores = np.asarray(scene.get("object_scores", []), dtype=np.float32)
+    confidence = float(scores.max()) if scores.size else None
+    lead_text = f"{gap:.1f}m" if gap >= 0 else "未检出前车"
+    object_text = f"检出{count}辆"
+    if confidence is not None:
+        object_text += f" / 最高{confidence:.0%}"
+    return thw, gap, count, confidence, lead_text, object_text
+
+
 def hud(scene, fps, *, size=(1280, 720), gpu_ms=None, show_occupancy=False,
         show_telemetry=True, preset_name="CHASE", fonts=None):
     """Render an anti-aliased Tesla FSD glassmorphic RGBA HUD overlay."""
@@ -787,7 +719,7 @@ def hud(scene, fps, *, size=(1280, 720), gpu_ms=None, show_occupancy=False,
     nav_hint = str(scene.get("nav_hint", "")) or "SD Route: Mainline Cruise"
     mode = str(scene.get("mode", "SYNTH"))
     infer_ms = scene.get("infer_ms")
-    thw_val, lead_gap, count_objs = _scene_thw_lead(scene)
+    thw_val, lead_gap, count_objs, _, lead_text, object_text = perception_summary(scene)
     thw_warn = 0. <= thw_val < 1.5
 
     # 1. Top-Left Main Driving Cluster
@@ -873,13 +805,13 @@ def hud(scene, fps, *, size=(1280, 720), gpu_ms=None, show_occupancy=False,
         d.text((.5 * (bx0 + bx1), .5 * (by0 + by1)), mode, font=fonts.small, fill=(246, 252, 255, 255), anchor="mm")
 
         thw_txt = f"{thw_val:.2f}s" if thw_val >= 0 else "--"
-        gap_txt = f"{lead_gap:.1f}m" if lead_gap >= 0 else "Clear"
+        gap_txt = lead_text
         inf_txt = f"{infer_ms:.1f}ms" if infer_ms is not None else "Replay"
         fps_txt = f"{fps:.0f} FPS" if fps > 1 else "GPU"
         gpu_txt = f"{gpu_ms:.2f}ms" if gpu_ms is not None else "4xMSAA"
         tiles = (
             (0, 0, "THW 时距", thw_txt, (255, 92, 98, 255) if thw_warn else (82, 228, 162, 255)),
-            (1, 0, f"LEAD 前车 ({count_objs})", gap_txt, (238, 244, 252, 255)),
+            (1, 0, object_text, gap_txt, (238, 244, 252, 255)),
             (0, 1, "INFER / CTRL", f"{inf_txt} / 100ms", (152, 206, 255, 255)),
             (1, 1, "SR 渲染", fps_txt, (152, 206, 255, 255)),
         )
@@ -891,7 +823,7 @@ def hud(scene, fps, *, size=(1280, 720), gpu_ms=None, show_occupancy=False,
             out_tile = (255, 92, 98, 180) if (col_i == 0 and row_i == 0 and thw_warn) else (120, 155, 200, 35)
             rr((bx, by, bx + tile_w, by + tile_h), 10 * s, fill_tile, out_tile)
             d.text((bx + 8 * s, by + 6 * s), k_label, font=fonts.small, fill=(142, 162, 190, 230))
-            val_font = fonts.body if len(k_val) > 8 else fonts.kpi
+            val_font = fonts.body if len(k_val) > 8 or not k_val.isascii() else fonts.kpi
             d.text((bx + 8 * s, by + 24 * s), k_val, font=val_font, fill=val_col)
 
         occ_fill = (32, 128, 232, 225) if show_occupancy else (32, 42, 58, 200)
@@ -1224,7 +1156,9 @@ class SRViewer:
         key = (round(float(pred_dict.get("speed", 0.)), 1), round(float(pred_dict.get("cruise", 0.)), 1),
                pred_dict.get("intent", "Follow"), round(float(pred_dict.get("steer", 0.)), 2),
                round(float(pred_dict.get("throttle", 0.)), 2), round(float(pred_dict.get("brake", 0.)), 2),
-               round(self.fps / 4), self.show_occupancy, self.show_telemetry, preset_name)
+               round(self.fps / 4), self.show_occupancy, self.show_telemetry, preset_name,
+               perception_summary(pred_dict), pred_dict.get("infer_ms"),
+               pred_dict.get("nav_hint"), pred_dict.get("mode"))
         if key != self.hud_key:
             self.hud_rgba = hud(pred_dict, self.fps, size=self.size, gpu_ms=self.gpu_ms,
                                 show_occupancy=self.show_occupancy, show_telemetry=self.show_telemetry,
@@ -1277,26 +1211,56 @@ class SRViewer:
         canvas = np.broadcast_to(bg, (h, w, 3)).copy()
         verts = np.concatenate((opaque, blended)).reshape(-1, 3, 7)
         clips = np.concatenate((verts[..., :3], np.ones((*verts.shape[:2], 1))), axis=-1) @ transform.T
-        good = (clips[..., 3] > .12).all(axis=1)
-        verts, clips = verts[good], clips[good]
+        # Clip triangles crossing the eye plane. Smooth contours often produce
+        # long triangles spanning both sides of the camera.
+        front = clips[..., 3] >= .15
+        clipped_pos, clipped_attr = [], []
+        for i in np.flatnonzero(front.any(axis=1) & ~front.all(axis=1)):
+            polygon = []
+            for j in range(3):
+                k = (j + 1) % 3
+                if front[i,j]:
+                    polygon.append((clips[i,j], verts[i,j]))
+                if front[i,j] != front[i,k]:
+                    t = (.15 - clips[i,j,3]) / (clips[i,k,3] - clips[i,j,3])
+                    polygon.append((clips[i,j] + t*(clips[i,k]-clips[i,j]),
+                                    verts[i,j] + t*(verts[i,k]-verts[i,j])))
+            for j in range(1,len(polygon)-1):
+                tri = (polygon[0],polygon[j],polygon[j+1])
+                clipped_pos.append([v[0] for v in tri])
+                clipped_attr.append([v[1] for v in tri])
+        verts, clips = verts[front.all(axis=1)], clips[front.all(axis=1)]
+        if clipped_pos:
+            verts = np.concatenate((verts,clipped_attr))
+            clips = np.concatenate((clips,clipped_pos))
         xyz = clips[..., :3] / clips[..., 3:4]
-        points = np.rint((xyz[..., :2] * [1., -1.] + 1.) * [w / 2, h / 2]).astype(np.int32)
+        screen = (xyz[..., :2] * [1., -1.] + 1.) * [w / 2, h / 2]
         colors = verts[..., 3:].mean(axis=1)
-        for i in np.argsort(-xyz[..., 2].mean(axis=1), kind="stable"):
-            poly, color = points[i], colors[i]
-            x0, y0 = poly.min(axis=0).clip(0, (w - 1, h - 1))
-            x1, y1 = poly.max(axis=0).clip(0, (w - 1, h - 1))
-            if x1 - x0 < 1 or y1 - y0 < 1:
+        zbuffer = np.full((h,w), np.inf)
+        order = np.lexsort((-xyz[...,2].mean(axis=1), colors[:,3] < .999))
+        for i in order:
+            poly, color = screen[i], colors[i]
+            x0,y0 = np.floor(poly.min(axis=0)).astype(int).clip(0,(w-1,h-1))
+            x1,y1 = np.ceil(poly.max(axis=0)).astype(int).clip(0,(w-1,h-1))
+            if x0 > x1 or y0 > y1:
                 continue
-            rgb = tuple(map(int, np.rint(color[2::-1] * 255)))
-            if color[3] >= .999:
-                cv2.fillConvexPoly(canvas, poly, rgb, cv2.LINE_AA)
+            u,v = poly[1:] - poly[0]
+            det = u[0]*v[1]-u[1]*v[0]
+            if abs(det) < 1e-8:
+                continue
+            yy,xx = np.ogrid[y0:y1+1,x0:x1+1]
+            x,y = xx + .5-poly[0,0], yy + .5-poly[0,1]
+            a,b = (x*v[1]-y*v[0])/det,(y*u[0]-x*u[1])/det
+            z = xyz[i,0,2] + a*(xyz[i,1,2]-xyz[i,0,2]) + b*(xyz[i,2,2]-xyz[i,0,2])
+            depth = zbuffer[y0:y1+1,x0:x1+1]
+            visible = (a>=0)&(b>=0)&(a+b<=1)&(z<=depth)
+            roi = canvas[y0:y1+1,x0:x1+1]
+            rgb = color[2::-1]*255
+            if color[3]>=.999:
+                roi[visible] = rgb
+                depth[visible] = z[visible]
             else:
-                roi = canvas[y0:y1 + 1, x0:x1 + 1]
-                mask = np.zeros(roi.shape[:2], np.uint8)
-                cv2.fillConvexPoly(mask, poly - [x0, y0], 1)
-                inside = mask > 0
-                roi[inside] = np.rint(roi[inside] * (1. - color[3]) + np.asarray(rgb) * color[3])
+                roi[visible] = roi[visible]*(1-color[3])+rgb*color[3]
         alpha = hud_rgba[..., 3:4].astype(np.float32) / 255.
         hud_bgr = hud_rgba[..., 2::-1].astype(np.float32)
         return np.rint(canvas.astype(np.float32) * (1. - alpha) + hud_bgr * alpha).astype(np.uint8)

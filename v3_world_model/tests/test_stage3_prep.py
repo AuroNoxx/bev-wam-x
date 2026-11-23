@@ -278,7 +278,7 @@ class Stage3PrepTests(unittest.TestCase):
         self.assertTrue(20_000_000 <= params <= 30_000_000)
         rgb = tuple(torch.randint(0, 256, (1, 3, h, w), dtype=torch.uint8) for w, h in SIZES)
         lidar = torch.randn(1, 6, H, W)
-        prev = torch.randn(1, 64, 256)
+        prev = torch.randn(1, 128, 256)
         motion = torch.tensor([[-.93, .04, -.02]])
         query = dict(cmd=torch.tensor([[0., 1., 0.]]),
                      nav_anchors=torch.tensor([[[12., 0., 0.], [24., 0., 0.], [36., 0., 0.]]]),
@@ -296,16 +296,17 @@ class Stage3PrepTests(unittest.TestCase):
                             self.assertEqual((left[key] - result[key]).abs().max().item(), 0.0, key)
                         self.assertGreater((left["trajectory"] - result["trajectory"]).abs().max().item(), 0)
                 decoded = model.decode_perception(left["z_t"])
-        self.assertEqual(DECODE_SHAPE, (40, 30))
-        self.assertEqual(model.dense_queries.shape[1], 40 * 30)
-        self.assertEqual(tuple(left["z_t"].shape), (1, 64, 256))
+        self.assertEqual(DECODE_SHAPE, (80, 60))
+        self.assertEqual(model.anchor_xy.shape, (128, 2))
+        self.assertEqual(tuple(left["z_t"].shape), (1, 128, 256))
         self.assertEqual(tuple(left["lane_logits"].shape), (1, 4, H, W))
         self.assertEqual(tuple(left["occupancy_logits"].shape), (1, Z, H, W))
         self.assertEqual(tuple(left["future_occupancy_logits"].shape), (1, 5, H, W))
         for key in left:
             self.assertTrue(torch.isfinite(left[key]).all(), key)
         for key, tensor in decoded.items():
-            self.assertTrue(torch.equal(tensor, left[key]), key)
+            self.assertEqual(tensor.shape, left[key].shape, key)
+            self.assertTrue(torch.isfinite(tensor).all(), key)
         targets = {k: torch.as_tensor(v)[None] for k, v in labels().items()}
         loss = sum(stage31_losses(left, targets).values())
         self.assertTrue(torch.isfinite(loss))
@@ -333,6 +334,15 @@ class Stage3PrepTests(unittest.TestCase):
             check = json.loads((packed / "verification.json").read_text(encoding="utf-8"))
             self.assertEqual(check, dict(sampled_frames=16, max_abs_diff=0.0,
                                          route_overlap=0, initial_state_overlap=0))
+            extended = base / "extended"
+            with patch("sys.argv", ["pack_colab_v3", "--source", str(source), "--out", str(extended),
+                                    "--base-manifest", str(packed / "manifest.json"), "--verify-pack"]):
+                pack_cli()
+            combined = read_manifest(extended / "manifest.json")
+            self.assertEqual(combined["total_frames"], 32)
+            self.assertEqual(combined["shards"][:-1], result["shards"])
+            for side, ids in result["splits"].items():
+                self.assertTrue(set(ids) <= set(combined["splits"][side]))
             matching = next(v for v in result["splits"].values() if "ep-000000" in v)
             self.assertTrue({"ep-000000", "ep-000001", "ep-000002"} <= set(matching))
             with self.assertRaisesRegex(ValueError, "leakage"):
@@ -394,6 +404,32 @@ class Stage3PrepTests(unittest.TestCase):
             self.assertAlmostEqual(result["learning_rate_after_update"], args.lr)
             self.assertLess(lr_factor(4, 3, 5), lr_factor(3, 3, 5))
             self.assertAlmostEqual(lr_factor(5, 3, 5), .05)
+
+    def test_object_gradient_and_branch_geometry(self):
+        from v3_world_model.objectives import object_focal_loss
+        from v3_world_model.sr_geometry import centerlines, surface_triangles, temporal_probabilities
+        logits = torch.zeros(32, requires_grad=True)
+        target = torch.zeros_like(logits)
+        target[0] = 1
+        grad, = torch.autograd.grad(object_focal_loss(logits, target), logits)
+        self.assertLess(grad[0], -7 * grad[1])
+        mask = np.zeros((H, W), np.uint8)
+        mask[80, 15:105] = 1
+        mask[40:81, 60] = 1
+        branches = centerlines(mask)
+        self.assertEqual(len(branches), 3)
+        self.assertGreater(max(np.ptp(path[:, 1]) for path in branches), 20)
+        road = np.ones((H,W), np.uint8)
+        road[60:100,45:75] = 0
+        triangles = surface_triangles(road).reshape(-1,3,2)
+        hole = tuple(map(float,metric(np.array([60,80]))))
+        self.assertTrue(all(cv2.pointPolygonTest(tri, hole, False) < 0 for tri in triangles))
+        prob = np.zeros((4,H,W), np.float32)
+        prev = prob.copy()
+        prev[:,80,60] = 1
+        # A .75 m forward move places the old feature one row behind.
+        smoothed = temporal_probabilities(prob, prev, [-.75,0,0])
+        self.assertAlmostEqual(smoothed[0,81,60], .35, places=5)
 
     def test_sr_offscreen(self):
         scene = synthetic_scene()

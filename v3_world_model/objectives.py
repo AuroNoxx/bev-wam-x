@@ -5,7 +5,7 @@ from torch.nn import functional as F
 
 
 LANE_POS_WEIGHT = (1., 8., 8., 3.)
-OCC_POS_WEIGHT = 20.
+OCC_POS_WEIGHT = 8.
 
 
 def segmentation(logits, target, pos_weight=1., focal=False):
@@ -21,6 +21,11 @@ def segmentation(logits, target, pos_weight=1., focal=False):
     prob, target = prob.flatten(2), target.flatten(2)
     dice = (2 * (prob * target).sum(-1) + 1) / (prob.sum(-1) + target.sum(-1) + 1)
     return loss + (1 - dice).mean()
+
+
+def object_focal_loss(logits, target):
+    bce = F.binary_cross_entropy_with_logits(logits, target, reduction="none")
+    return ((1 + 7 * target) * (-torch.expm1(-bce)).square() * bce).mean()
 
 
 def detection(prediction, targets):
@@ -49,7 +54,7 @@ def detection(prediction, targets):
         truth.append(encoded[b, cols])
         logits.append(cls[b, rows])
         classes.append(ids[b, cols])
-    loss = F.binary_cross_entropy_with_logits(obj, objectness)
+    loss = object_focal_loss(obj, objectness)
     if predicted:
         loss = loss + F.smooth_l1_loss(torch.cat(predicted) / scale, torch.cat(truth) / scale)
         loss = loss + F.cross_entropy(torch.cat(logits), torch.cat(classes))

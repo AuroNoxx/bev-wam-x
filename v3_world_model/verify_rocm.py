@@ -56,11 +56,14 @@ def compare(args):
         raise RuntimeError("The installed ROCm build does not expose BF16")
     torch.manual_seed(731)
     torch.cuda.reset_peak_memory_stats()
-    model = BEVWAMXPerception(lidar_dropout=0.).eval().cuda()
+    state = None
     if args.checkpoint:
-        state = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
+        from v1_dual_system.checkpoint_io import VerifiedCheckpointIO
+        state = VerifiedCheckpointIO().load_checkpoint(args.checkpoint, map_location="cpu")
         if state["task_state"]["config_sha256"] != CONFIG_SHA256:
             raise ValueError("Checkpoint sensor calibration mismatch")
+    model = BEVWAMXPerception(lidar_dropout=0., legacy=bool(state and state["task_state"].get("architecture") != "stage31b")).eval().cuda()
+    if state:
         model.load_state_dict({k.removeprefix("model."): v for k, v in state["state_dict"].items()})
     rgb, inputs = observations(args.frame)
 

@@ -30,7 +30,7 @@ def sha256(path):
         return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
-def split_episodes(entries, validation_fraction=.20, seed=317):
+def split_episodes(entries, validation_fraction=.20, seed=317, previous=None):
     """Take transitive closure under either route equality or initial-state equality."""
     if not 0 < validation_fraction < 1:
         raise ValueError("Validation fraction must be between zero and one")
@@ -55,10 +55,25 @@ def split_episodes(entries, validation_fraction=.20, seed=317):
         raise ValueError("Need at least two independent route/initial-state components")
     np.random.default_rng(seed).shuffle(groups)
     goal = sum(len(e["frame_ids"]) for e in entries) * validation_fraction
-    lengths = np.cumsum([sum(len(e["frame_ids"]) for e in g) for g in groups])[:-1]
-    cut = int(np.argmin(abs(lengths - goal))) + 1
-    splits = {name: sorted(e["id"] for g in chunk for e in g)
-              for name, chunk in (("val", groups[:cut]), ("train", groups[cut:]))}
+    pinned = {ep: split for split, eps in (previous or {}).items() for ep in eps}
+    splits = {"train": [], "val": []}
+    free = []
+    for group in groups:
+        sides = {pinned[e["id"]] for e in group if e["id"] in pinned}
+        if len(sides) > 1:
+            raise ValueError("New episodes connect existing train and validation groups")
+        if not sides:
+            free.append(group)
+            continue
+        side = sides.pop()
+        splits[side].extend(e["id"] for e in group)
+        if side == "val":
+            goal -= sum(len(e["frame_ids"]) for e in group)
+    lengths = np.r_[0, np.cumsum([sum(len(e["frame_ids"]) for e in g) for g in free])]
+    cuts = range(0 if splits["val"] else 1, len(free) + int(bool(splits["train"])))
+    cut = min(cuts, key=lambda i: abs(lengths[i] - goal))
+    for name, chunk in (("val", free[:cut]), ("train", free[cut:])):
+        splits[name] = sorted(splits[name] + [e["id"] for group in chunk for e in group])
     assert_split(entries, splits)
     return splits
 
@@ -137,12 +152,17 @@ def episode_members(folder, entry):
     yield "targets.npz", array_bytes({key: np.stack([v[key] for v in collected]) for key in LABEL_SHAPES})
 
 
-def pack(source, out, max_bytes=MAX_BYTES, validation_fraction=.2, seed=317):
+def pack(source, out, max_bytes=MAX_BYTES, validation_fraction=.2, seed=317, base_manifest=None):
     if not 20_480 <= max_bytes <= MAX_BYTES:
         raise ValueError(f"Shard budget must be at most {MAX_BYTES:,} bytes")
     raw = sorted(episode_index(source), key=lambda pair: (str(pair[0].parent.resolve()), pair[0].name))
-    entries = [dict(info, id=f"ep-{i:06d}") for i, (_, info) in enumerate(raw)]
-    splits = split_episodes(entries, validation_fraction, seed)
+    base = read_manifest(base_manifest) if base_manifest else {}
+    old_entries = base.get("episodes", [])
+    old_shards = base.get("shards", [])
+    start_id = max((int(e["id"][3:]) for e in old_entries), default=-1) + 1
+    shard_id = max((int(s["name"][8:13]) for s in old_shards), default=-1) + 1
+    entries = [dict(info, id=f"ep-{i:06d}") for i, (_, info) in enumerate(raw, start_id)]
+    splits = split_episodes(old_entries + entries, validation_fraction, seed, base.get("splits"))
     out.mkdir(parents=True, exist_ok=False)
     run_qc(source, out / "qc")
     paths = []
@@ -163,7 +183,7 @@ def pack(source, out, max_bytes=MAX_BYTES, validation_fraction=.2, seed=317):
             if active is None or used + episode_bytes + 10240 > max_bytes:
                 if active is not None:
                     active.close()
-                paths.append(out / f"stage31-{len(paths):05d}.tar")
+                paths.append(out / f"stage31-{shard_id + len(paths):05d}.tar")
                 active = tarfile.open(paths[-1], "w", format=tarfile.USTAR_FORMAT)
                 used = 0
             entry["shard"] = paths[-1].name
@@ -180,6 +200,13 @@ def pack(source, out, max_bytes=MAX_BYTES, validation_fraction=.2, seed=317):
     shards = [dict(name=p.name, sha256=sha256(p), bytes=p.stat().st_size) for p in paths]
     if any(s["bytes"] > max_bytes for s in shards):
         raise RuntimeError("Tar padding exceeded shard size budget")
+    for shard in old_shards:
+        destination = out / shard["name"]
+        shutil.copyfile(base_manifest.parent / shard["name"], destination)
+        if sha256(destination) != shard["sha256"]:
+            raise IOError(f"Base shard copy failed integrity check: {destination}")
+    entries = old_entries + entries
+    shards = old_shards + shards
     manifest = dict(format=FORMAT, config_sha256=CONFIG_SHA256, total_frames=sum(len(e["frame_ids"]) for e in entries),
                     splits=splits, episodes=entries, shards=shards, webp_quality=90, bit_order="little")
     temporary = out / "manifest.json.part"
@@ -223,10 +250,19 @@ def unpack_verified(manifest_path, out):
     return manifest
 
 
-def verify_pack(source, manifest_path, samples=24, seed=314):
+def verify_pack(source, manifest_path, samples=24, seed=314, base_manifest=None):
     manifest = read_manifest(manifest_path)
     raw = sorted(episode_index(source), key=lambda pair: (str(pair[0].parent.resolve()), pair[0].name))
     entries = manifest["episodes"]
+    base_count = 0
+    if base_manifest:
+        base = read_manifest(base_manifest)
+        base_count = len(base["episodes"])
+        if (entries[:base_count] != base["episodes"] or
+                manifest["shards"][:len(base["shards"])] != base["shards"] or
+                any(not set(ids).issubset(manifest["splits"][side]) for side, ids in base["splits"].items())):
+            raise ValueError("Previously verified base pack was changed")
+        entries = entries[base_count:]
     if len(raw) != len(entries) or samples < 1:
         raise ValueError("Original episode count or sample count invalid")
     rng = np.random.default_rng(seed)
@@ -282,7 +318,10 @@ def verify_pack(source, manifest_path, samples=24, seed=314):
                 total += 1
         if expected:
             raise ValueError("Archive members missing")
-    return dict(sampled_frames=total, max_abs_diff=0.0, route_overlap=0, initial_state_overlap=0)
+    result = dict(sampled_frames=total, max_abs_diff=0.0, route_overlap=0, initial_state_overlap=0)
+    if base_manifest:
+        result["verified_base_episodes"] = base_count
+    return result
 
 
 def main():
@@ -292,6 +331,7 @@ def main():
     parser.add_argument("--max-shard-bytes", type=int, default=MAX_BYTES)
     parser.add_argument("--verify-pack", action="store_true")
     parser.add_argument("--verify-only", action="store_true")
+    parser.add_argument("--base-manifest", type=Path, help="Extend verified shards and preserve their splits")
     parser.add_argument("--unpack", type=Path, help="Manifest to verify and extract into --out")
     args = parser.parse_args()
     if args.unpack:
@@ -300,9 +340,9 @@ def main():
     if not args.source:
         parser.error("--source is required to pack or compare")
     if not args.verify_only:
-        pack(args.source, args.out, max_bytes=args.max_shard_bytes)
+        pack(args.source, args.out, max_bytes=args.max_shard_bytes, base_manifest=args.base_manifest)
     if args.verify_pack or args.verify_only:
-        result = verify_pack(args.source, args.out / "manifest.json")
+        result = verify_pack(args.source, args.out / "manifest.json", base_manifest=args.base_manifest)
         (args.out / "verification.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
         print(result)
 

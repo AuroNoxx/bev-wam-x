@@ -21,7 +21,7 @@ from .objectives import stage31_losses
 from .pack_colab_v3 import sha256
 from .perception_model import BEVWAMXPerception, CLIP_LEN, sdpa_context
 
-LOSS_WEIGHTS = dict(lane=1., vectors=.4, objects=1., occupancy=1., trajectory=.6)
+LOSS_WEIGHTS = dict(lane=1., vectors=.4, objects=2., occupancy=1., trajectory=.6)
 
 
 def lr_factor(step, warmup, total):
@@ -77,7 +77,7 @@ class Stage31(pl.LightningModule):
 
     def on_load_checkpoint(self, checkpoint):
         old = checkpoint["task_state"]
-        for key in ("config_sha256", "pack_sha256", "learning_rate", "clip_len", "physical_batch",
+        for key in ("architecture", "config_sha256", "pack_sha256", "learning_rate", "clip_len", "physical_batch",
                     "gradient_accumulation", "lidar_dropout", "seed", "warmup_updates", "schedule_updates"):
             if old.get(key) != self.config[key]:
                 raise ValueError(f"Cannot resume with changed {key}")
@@ -156,7 +156,7 @@ def config_for(args):
         warmup = saved.get("warmup_updates", min(500, total // 20))
     if not 0 <= warmup < total:
         raise ValueError("Warmup updates must be nonnegative and below the schedule length")
-    return dict(config_sha256=CONFIG_SHA256, pack_sha256=sha256(args.dataset / "manifest.json"),
+    return dict(architecture="stage31b", config_sha256=CONFIG_SHA256, pack_sha256=sha256(args.dataset / "manifest.json"),
                 physical_batch=args.batch, gradient_accumulation=args.accumulate, clip_len=CLIP_LEN,
                 max_updates=args.max_updates, checkpoint_every=args.checkpoint_every,
                 learning_rate=args.lr, warmup_updates=warmup, schedule_updates=total,

@@ -8,3 +8,5 @@ filelock>=3.16,<5
 moderngl>=5.10,<6
 glfw>=2.7,<3
 psutil>=6,<9
+scikit-image>=0.25,<1
+mapbox-earcut>=2,<3

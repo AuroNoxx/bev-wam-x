@@ -10,9 +10,9 @@ from .geometry import CFG, NAMES, SIZES, HEIGHTS, grid, projection_tables
 from .labels import MAX_BOX, MIN_BOX, OBJECT_CLASSES, OBJECT_SLOTS, VECTOR_X
 
 D = 256
-LATENT_TOKENS = 64
-LIFT_SHAPE = (40, 30)
-DECODE_SHAPE = (40, 30)
+LATENT_TOKENS = 128
+LIFT_SHAPE = (80, 60)
+DECODE_SHAPE = (80, 60)
 CLIP_LEN = 4
 
 
@@ -100,30 +100,40 @@ class BEVWAMXPerception(nn.Module):
     rgb is an ordered tuple of six uint8 RGB BCHW tensors. lidar_bev is Bx6x160x120
     or None. Command Bx3, nav anchors Bx3x3 in FLU, and speed/yaw rate Bx2 in SI
     reach only the trajectory head.
-    prev_latent is Bx64x256; ego_delta uses v2's previous-relative-to-current convention.
+    prev_latent is Bx128x256; ego_delta uses v2's previous-relative-to-current convention.
     """
 
-    def __init__(self, lidar_dropout=.15):
+    def __init__(self, lidar_dropout=.15, *, legacy=False):
         super().__init__()
         if not 0 <= lidar_dropout <= 1:
             raise ValueError("lidar_dropout must be in [0,1]")
         self.lidar_dropout = lidar_dropout
+        self.legacy = legacy
+        self.shape = (40, 30) if legacy else LIFT_SHAPE
+        self.num_tokens = 64 if legacy else LATENT_TOKENS
         self.camera = CameraFPN()
         self.lift_reduce = conv(64 * len(HEIGHTS), 128)
-        self.lidar = nn.Sequential(conv(6, 48, 2), conv(48, 96, 2))
+        self.lidar = nn.Sequential(conv(6, 48, 2), conv(48, 96, 2 if legacy else 1))
         self.fuse = nn.Sequential(conv(224, D), conv(D, D))
         self.bev_position = nn.Linear(2, D)
-        self.resampler_queries = nn.Parameter(torch.randn(1, LATENT_TOKENS, D) * .02)
+        self.resampler_queries = nn.Parameter(torch.randn(1, self.num_tokens, D) * .02)
         self.delta_embed = nn.Sequential(nn.Linear(3, D), nn.SiLU(), nn.Linear(D, D))
         self.resample = AttentionBlock()
         self.latent_blocks = nn.Sequential(*[AttentionBlock() for _ in range(8)])
         self.latent_norm = nn.LayerNorm(D)
 
-        self.dense_queries = nn.Parameter(torch.randn(1, DECODE_SHAPE[0] * DECODE_SHAPE[1], D) * .02)
-        self.dense_attention = AttentionBlock()
-        self.dense = nn.Sequential(conv(D, 128), nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False),
-                                   conv(128, 80), nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False),
-                                   conv(80, 48), nn.Conv2d(48, 17, 1))
+        if legacy:
+            self.dense_queries = nn.Parameter(torch.randn(1, 1200, D) * .02)
+            self.dense_attention = AttentionBlock()
+            self.dense = nn.Sequential(conv(D, 128), nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False),
+                                       conv(128, 80), nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False),
+                                       conv(80, 48), nn.Conv2d(48, 17, 1))
+        else:
+            anchors = grid((16, 8)).reshape(-1, 2) / [80., 30.]
+            self.register_buffer("anchor_xy", torch.tensor(anchors, dtype=torch.float32), persistent=False)
+            self.dense = nn.Sequential(nn.Conv2d(D, 64, 1), conv(64, 64),
+                                       nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False),
+                                       conv(64, 32), nn.Conv2d(32, 17, 1))
         self.vector_queries = nn.Parameter(torch.randn(1, 7, D) * .02)
         self.vector_attention = AttentionBlock()
         self.vector = nn.Linear(D, len(VECTOR_X) * 2 + 1)
@@ -137,14 +147,14 @@ class BEVWAMXPerception(nn.Module):
         self.speed_embed = nn.Linear(2, D)
         self.plan = nn.Sequential(nn.Linear(D, D), nn.GELU(), nn.Linear(D, 75))
 
-        coords, valid = projection_tables(shape=LIFT_SHAPE)
+        coords, valid = projection_tables(shape=self.shape)
         for i, (width, height) in enumerate(SIZES):
             dimensions = np.ceil(np.array([width, height]) / 8)
             normalized = ((coords[:, i] / 8 + .5) * (2 / dimensions) - 1)
             self.register_buffer(f"uv_{i}", torch.from_numpy(normalized.astype(np.float32)), persistent=False)
         count = np.maximum(valid.sum(axis=1, keepdims=True), 1)
         self.register_buffer("view_weights", torch.from_numpy((valid / count).astype(np.float32)), persistent=False)
-        xy = grid(LIFT_SHAPE).reshape(-1, 2) / [80., 30.]
+        xy = grid(self.shape).reshape(-1, 2) / [80., 30.]
         self.register_buffer("bev_xy", torch.from_numpy(xy.astype(np.float32)), persistent=False)
         self.register_buffer("box_min", torch.tensor(MIN_BOX, dtype=torch.float32), persistent=False)
         self.register_buffer("box_span", torch.tensor(MAX_BOX - MIN_BOX, dtype=torch.float32), persistent=False)
@@ -165,10 +175,10 @@ class BEVWAMXPerception(nn.Module):
         sides = features(torch.cat(rgb[1:], dim=0)).split(batch)
         planes = None
         for i, feature in enumerate((front, *sides)):
-            uv = getattr(self, f"uv_{i}").reshape(1, -1, LIFT_SHAPE[1], 2)
+            uv = getattr(self, f"uv_{i}").reshape(1, -1, self.shape[1], 2)
             sample = F.grid_sample(feature.float(), uv.expand(batch, -1, -1, -1),
                                    mode="bilinear", padding_mode="zeros", align_corners=False)
-            sample = sample.reshape(batch, 64, len(HEIGHTS), *LIFT_SHAPE)
+            sample = sample.reshape(batch, 64, len(HEIGHTS), *self.shape)
             weight = self.view_weights[:, i]
             contribution = (sample * weight).to(feature.dtype)
             planes = contribution if planes is None else planes + contribution
@@ -181,32 +191,49 @@ class BEVWAMXPerception(nn.Module):
         b = rgb[0].shape[0]
         visual = self.lift(rgb)
         if lidar_bev is None:
-            lidar = visual.new_zeros(b, 96, *LIFT_SHAPE)
+            lidar = visual.new_zeros(b, 96, *self.shape)
         else:
             lidar = self.lidar(lidar_bev.to(visual.dtype))
             if self.training and self.lidar_dropout > 0:
                 retain = torch.rand((b, 1, 1, 1), device=lidar.device) >= self.lidar_dropout
                 lidar = lidar * retain
-        tokens = self.fuse(torch.cat((visual, lidar), dim=1)).flatten(2).transpose(1, 2)
+        bev = self.fuse(torch.cat((visual, lidar), dim=1))
+        tokens = bev.flatten(2).transpose(1, 2)
         tokens = tokens + self.bev_position(self.bev_xy).to(tokens.dtype)
         queries = self.resampler_queries.to(tokens.dtype).expand(b, -1, -1)
+        if not self.legacy:
+            seed = F.adaptive_avg_pool2d(bev, (16, 8)).flatten(2).transpose(1, 2)
+            queries = queries + seed + self.bev_position(self.anchor_xy).to(queries.dtype)
         if prev_latent is not None:
-            if prev_latent.shape != (b, LATENT_TOKENS, D) or ego_delta is None or ego_delta.shape != (b, 3):
-                raise ValueError("prev_latent and ego_delta must have shapes Bx64x256 and Bx3")
+            if prev_latent.shape != (b, self.num_tokens, D) or ego_delta is None or ego_delta.shape != (b, 3):
+                raise ValueError(f"Expected Bx{self.num_tokens}x{D} latent and Bx3 ego delta")
             motion = self.delta_embed(ego_delta.to(tokens.dtype)).unsqueeze(1)
             tokens = torch.cat((tokens, prev_latent.to(tokens.dtype) + motion), dim=1)
         z_t = self.latent_norm(self.latent_blocks(self.resample(queries, tokens)))
-        return dict(z_t=z_t, **self.decode_perception(z_t),
+        return dict(z_t=z_t, **self.decode_perception(z_t, None if self.legacy else bev),
                     trajectory=self.plan_trajectory(z_t, cmd, nav_anchors, ego_speed))
 
-    def decode_perception(self, z_t):
-        """Decode the Stage 3.2 latent without consuming observations or planning inputs."""
+    def decode_perception(self, z_t, bev=None):
+        """Decode latent alone for rollout, or fuse the observed BEV for online perception."""
         b = z_t.shape[0]
-        spatial = self.dense_attention(self.dense_queries.to(z_t.dtype).expand(b, -1, -1), z_t)
-        spatial = spatial.transpose(1, 2).reshape(b, D, *DECODE_SHAPE)
+        context = z_t
+        if self.legacy:
+            spatial = self.dense_attention(self.dense_queries.to(z_t.dtype).expand(b, -1, -1), z_t)
+            spatial = spatial.transpose(1, 2).reshape(b, D, *self.shape)
+        else:
+            spatial = F.interpolate(z_t.transpose(1, 2).reshape(b, D, 16, 8), size=self.shape,
+                                    mode="bilinear", align_corners=False)
+            if bev is not None:
+                # Entire samples periodically learn the latent-only dynamics decoder.
+                if self.training:
+                    bev = bev * (torch.rand(b, 1, 1, 1, device=bev.device) >= .2)
+                spatial = spatial + bev
+                local_keys = F.avg_pool2d(bev, 2).flatten(2).transpose(1, 2)
+                pos = F.avg_pool2d(self.bev_xy.T.reshape(1, 2, *self.shape), 2).flatten(2).transpose(1, 2)
+                context = torch.cat((z_t, local_keys + self.bev_position(pos).to(z_t.dtype)), dim=1)
         dense = self.dense(spatial)
         vectors = self.vector(self.vector_attention(self.vector_queries.to(z_t.dtype).expand(b, -1, -1), z_t))
-        obj = self.objects(self.object_attention(self.object_queries.to(z_t.dtype).expand(b, -1, -1), z_t)).float()
+        obj = self.objects(self.object_attention(self.object_queries.to(z_t.dtype).expand(b, -1, -1), context)).float()
         center = obj[..., :3].tanh() * self.center_scale + self.center_offset
         size = self.box_min + self.box_span * obj[..., 3:6].sigmoid()
         heading = F.normalize(obj[..., 6:8] + self.heading_offset, dim=-1, eps=1e-6)

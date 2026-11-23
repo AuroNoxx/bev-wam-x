@@ -1,5 +1,33 @@
 # Stage 3.1 本机验收交接
 
+## Stage 3.1b 重训
+
+新模型使用 80×60 空间特征和 128 个带位置锚点的时序 token。正式训练使用新的 `stage31b-v2-pack` 和 `stage31b-v2-run`。初始权重、优化器和调度器从头开始，恢复中断训练时必须匹配架构及数据包指纹。
+
+Town12 增量入口逐帧核对 120 km/h 非路口路段相邻同向驾驶车道宽度、航向及有效同向车辆框，逐集保留计数，并执行传感器和标签质检。增量打包会校验并复制已有分片，固定已有 episode 的训练和验证归属，对增量执行完整质检及打包回读。
+
+```powershell
+.venv-carla-ue5/Scripts/python.exe -m v3_world_model.collect_wide --frames 5000 --calibration .cache/stage31-r2/cal-Town12/calibration.json --out .cache/stage31b/wide-Town12
+.venv-carla-ue5/Scripts/python.exe -m v3_world_model.pack_colab_v3 --source .cache/stage31b/wide-Town12 --base-manifest .cache/stage31-r2/pack-full/manifest.json --out .cache/stage31b/pack --verify-pack
+.venv-train/Scripts/python.exe -m v3_world_model.evaluate_sr --all --dataset .cache/stage31b/dataset --checkpoint .cache/stage31b/run-stage31b-a100/best.ckpt --out .cache/stage31b/val-all.json
+```
+
+## 2026-11-23 SR 验收阻断：当前权重漏车、漏车道
+
+此前完成训练与 ROCm 数值一致性验证不代表 SR 感知验收通过。CARLA 1.0、Town04_Opt、异步、三个四车道静态位置的同渲染器对照中，参考数据可以显示四车道和四辆车；模型原始栅格已缺失车道，整圈 LiDAR 输入后仍无置信度大于 0.5 的车辆。参考数据仅用于评估对照，没有进入模型输入或训练数据。
+
+对打包验证集均匀抽取 24 clips / 96 帧（Town12 80 帧、Town10HD_Opt 16 帧），best（7826 updates）的近场 IoU 为：可行驶区域 0.752、虚线 0.126、实线 0.238、路沿 0.234。车辆按阈值 0.5、类别无关且中心误差小于 3 m 的一对一匹配：143 个真值实例，24 个预测，15 个匹配；召回 10.5%、精确率 62.5%。latest（10000 updates）同样只匹配 15 个，不能靠换断点解决。该抽查不是全量评估，也不是检测 AP。不能仅凭 val_objects 约 0.24 或整体 loss 宣称车辆检测可用。
+
+代码侧修复：`async_lidar.full_revolution` 在异步帧率下累积一圈、按包补偿自车运动并拒绝缺包/未来帧；最旧包按各激光通道回波顺序近似裁剪，不是逐点时间戳去畸变。实机三个位置均覆盖 72 个 5° 方位分箱。SR 保留目标置信度，未检出时显示“未检出前车”，不再显示 Clear；HUD 缓存随目标数、置信度和前车距离更新。渲染器没有“两车道”或车辆数量上限，未添加真值回填或降低部署阈值。
+
+可重复运行：
+
+```powershell
+.venv-train/Scripts/python.exe -m v3_world_model.evaluate_sr --dataset .cache/stage31-r2/dataset-full --checkpoint .cache/stage31-r2/run-stage31-a100/best.ckpt --clips 24 --out .cache/stage31-r2/sr-diagnostic/validation-audit.json
+```
+
+对照图与实机报告在 `.cache/stage31-r2/sr-diagnostic/`，未保存 Town04 训练帧。缺失车道和漏车尚未修复，下一步需针对感知训练与数据分布定位、修复并重新验收；不得将当前 SR 当作合格闭环感知，也不得重新启用 Traffic Manager 自车驾驶来冒充模型闭环。
+
 分支为 `feat/v3-stage3-prep`。从仓库根目录运行模块。输出示例写入 Git 忽略的 `.cache/stage31-r2`。后视外参、观测键和 tar 成员已更新，采集需使用新标定报告，Colab 需使用 `bev-wam-x-stage31-v2` 包和新权重目录。每台模拟器只保留一个同步时钟驱动进程。
 
 ## 已执行的提交前验收
