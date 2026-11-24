@@ -5,7 +5,7 @@ import numpy as np
 from scipy.signal import savgol_filter
 from skimage.morphology import skeletonize
 
-from .geometry import grid, metric, pixels
+from .geometry import DX, DY, H, W, X_MAX, X_MIN, Y_MAX, Y_MIN, grid, metric, pixels
 
 
 def smooth(points, closed=False):
@@ -64,30 +64,94 @@ def fit_curve(points, closed=False):
     return result
 
 
-def surface_triangles(prob, *, fit=False):
-    # Oversample probabilities before thresholding to retain sub-cell boundaries.
+def _dilate_road(drivable_mask, radius_m=1.0):
+    binary = (np.asarray(drivable_mask, np.float32) >= .5).astype(np.uint8)
+    if binary.max() == 0:
+        return binary
+    k = max(3, 2 * int(round(radius_m / 0.6)) + 1)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k, k))
+    return cv2.dilate(binary, kernel)
+
+
+def clean_drivable_mask(prob):
+    """Remove isolated asphalt islands and fill tiny pinholes while keeping real medians/holes."""
+    binary = (np.asarray(prob, np.float32) >= .5).astype(np.uint8)
+    if binary.max() == 0:
+        return np.zeros(binary.shape, np.float32)
+    k7 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
+    k3 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    mask = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, k7, borderType=cv2.BORDER_REPLICATE)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, k3, borderType=cv2.BORDER_REPLICATE)
+    h, w = mask.shape
+    num_bg, bg_labels, bg_stats, _ = cv2.connectedComponentsWithStats(1 - mask, connectivity=4)
+    if num_bg > 1:
+        border_labels = set(np.unique(np.concatenate((
+            bg_labels[0, :], bg_labels[-1, :], bg_labels[:, 0], bg_labels[:, -1]
+        ))).tolist())
+        for k in range(1, num_bg):
+            if k not in border_labels and bg_stats[k, cv2.CC_STAT_AREA] < 28:
+                mask[bg_labels == k] = 1
+    num_fg, fg_labels, fg_stats, _ = cv2.connectedComponentsWithStats(mask, connectivity=8)
+    if num_fg <= 1:
+        return np.zeros(binary.shape, np.float32)
+    ego_uv = np.rint(pixels(np.array([[0., 0.]], np.float32))[0]).astype(int)
+    ego_col = int(np.clip(ego_uv[0], 0, w - 1))
+    ego_row = int(np.clip(ego_uv[1], 0, h - 1))
+    ego_label = int(fg_labels[ego_row, ego_col])
+    if ego_label == 0:
+        patch = fg_labels[max(0, ego_row - 4):min(h, ego_row + 5),
+                          max(0, ego_col - 4):min(w, ego_col + 5)]
+        nz = patch[patch > 0]
+        if len(nz):
+            vals, counts = np.unique(nz, return_counts=True)
+            ego_label = int(vals[counts.argmax()])
+    keep = np.zeros(binary.shape, np.float32)
+    for k in range(1, num_fg):
+        area = int(fg_stats[k, cv2.CC_STAT_AREA])
+        x_span = float(fg_stats[k, cv2.CC_STAT_HEIGHT]) * DX
+        y_span = float(fg_stats[k, cv2.CC_STAT_WIDTH]) * DY
+        if k == ego_label or (area >= 260 and (x_span >= 24.0 or y_span >= 24.0)):
+            keep[fg_labels == k] = 1.0
+    return keep
+
+
+def _surface_contours(prob, *, fit=False):
     scale = 4
     fine = cv2.resize(np.asarray(prob, np.float32), None, fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR)
     binary = (cv2.GaussianBlur(fine, (0, 0), 1.6) >= .5).astype(np.uint8)
     contours, hierarchy = cv2.findContours(binary, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
     if hierarchy is None:
-        return np.empty((0, 2), np.float32)
+        return [], None, scale
     rings = [smooth(metric((poly.reshape(-1, 2) + .5)/scale - .5), True) for poly in contours]
     if fit:
-        rings = [fit_curve(ring, closed=True) for ring in rings]
+        rings = [fit_curve(ring, closed=True) if len(ring) >= 4 else ring for ring in rings]
+    return rings, hierarchy[0], scale
+
+
+def _triangulate_contours(rings, hier):
+    if hier is None:
+        return np.empty((0, 2), np.float32)
     triangles = []
-    for i, (_, _, child, parent) in enumerate(hierarchy[0]):
+    for i, (_, _, child, parent) in enumerate(hier):
         if parent >= 0 or len(rings[i]) < 3:
             continue
         group = [rings[i]]
         while child >= 0:
             if len(rings[child]) >= 3:
                 group.append(rings[child])
-            child = hierarchy[0, child, 0]
+            child = hier[child, 0]
         vertices = np.concatenate(group)
         ends = np.cumsum([len(r) for r in group], dtype=np.uint32)
         triangles.append(vertices[mapbox_earcut.triangulate_float32(vertices, ends)])
     return np.concatenate(triangles) if triangles else np.empty((0, 2), np.float32)
+
+
+def surface_triangles(prob, *, fit=False):
+    # Clean noisy far islands/pinholes in smooth Car-OS mode while preserving large holes.
+    if fit:
+        prob = clean_drivable_mask(prob)
+    rings, hier, _ = _surface_contours(prob, fit=fit)
+    return _triangulate_contours(rings, hier)
 
 
 def centerlines(prob):
@@ -138,6 +202,289 @@ def temporal_probabilities(current, previous, delta=None):
     return .65*current + .35*previous
 
 
+def _pack_paths(paths):
+    paths = [np.asarray(path, np.float32) for path in paths if len(path) >= 2]
+    if not paths:
+        return None
+    lengths = np.array([len(path) for path in paths])
+    points = np.concatenate(paths)
+    start = np.r_[0, lengths.cumsum()[:-1]]
+    end = lengths.cumsum() - 1
+    tangent = np.roll(points, -1, axis=0) - np.roll(points, 1, axis=0)
+    tangent[start] = points[start + 1] - points[start]
+    tangent[end] = points[end] - points[end - 1]
+    normal = np.column_stack((-tangent[:, 1], tangent[:, 0]))
+    normal /= np.maximum(np.linalg.norm(normal, axis=1, keepdims=True), 1e-6)
+    segments = np.ones(len(points), bool)
+    segments[end] = False
+    return points, normal, np.flatnonzero(segments)
+
+
+def _arc_length(pts):
+    return float(np.linalg.norm(np.diff(pts, axis=0), axis=1).sum()) if len(pts) >= 2 else 0.0
+
+
+def _ring_area(pts):
+    if len(pts) < 3:
+        return 0.0
+    x, y = pts[:, 0], pts[:, 1]
+    return float(0.5 * abs(np.dot(x, np.roll(y, -1)) - np.dot(y, np.roll(x, -1))))
+
+
+def _resample_open(pts, step=0.5):
+    pts = np.asarray(pts, np.float32)
+    if len(pts) < 2:
+        return pts
+    seg = np.linalg.norm(np.diff(pts, axis=0), axis=1)
+    pts = pts[np.r_[True, seg > 1e-4]]
+    if len(pts) < 2:
+        return pts
+    s = np.r_[0.0, np.cumsum(np.linalg.norm(np.diff(pts, axis=0), axis=1))]
+    total = float(s[-1])
+    if total <= step:
+        return pts
+    n = max(int(np.ceil(total / step)) + 1, 2)
+    s_new = np.linspace(0.0, total, n, dtype=np.float32)
+    return np.column_stack((np.interp(s_new, s, pts[:, 0]), np.interp(s_new, s, pts[:, 1]))).astype(np.float32)
+
+
+def _end_dir(pts, at_end=True):
+    k = min(len(pts) - 1, 4)
+    vec = (pts[-1] - pts[-1 - k]) if at_end else (pts[k] - pts[0])
+    norm = float(np.linalg.norm(vec))
+    if norm < 1e-6:
+        vec = pts[-1] - pts[0]
+        norm = float(np.linalg.norm(vec))
+    return (vec / max(norm, 1e-6)).astype(np.float32)
+
+
+def _merge_collinear_paths(paths, *, max_gap=10.0, cos_thresh=0.94, max_lat=0.65):
+    chains = [np.asarray(p, np.float32) for p in paths if _arc_length(p) >= 1.0]
+    while len(chains) >= 2:
+        m = len(chains)
+        s_pt = np.array([c[0] for c in chains], dtype=np.float32)
+        e_pt = np.array([c[-1] for c in chains], dtype=np.float32)
+        ds = np.array([_end_dir(c, at_end=False) for c in chains], dtype=np.float32)
+        de = np.array([_end_dir(c, at_end=True) for c in chains], dtype=np.float32)
+        out_pt = np.vstack((e_pt, s_pt))
+        out_dir = np.vstack((de, -ds))
+        in_pt = np.vstack((s_pt, e_pt))
+        in_dir = np.vstack((ds, -de))
+        cid = np.tile(np.arange(m), 2)
+
+        delta = in_pt[None, :, :] - out_pt[:, None, :]
+        dist = np.hypot(delta[:, :, 0], delta[:, :, 1])
+        valid = (cid[:, None] != cid[None, :]) & (dist <= max_gap)
+        valid &= (out_dir @ in_dir.T) >= cos_thresh
+        far = dist > 0.25
+        if np.any(far & valid):
+            inv_d = 1.0 / np.maximum(dist, 1e-6)
+            chord = delta * inv_d[:, :, None]
+            dot_oc = np.sum(out_dir[:, None, :] * chord, axis=-1) >= cos_thresh
+            dot_ic = np.sum(in_dir[None, :, :] * chord, axis=-1) >= cos_thresh
+            lat = np.abs(out_dir[:, None, 0] * delta[:, :, 1] - out_dir[:, None, 1] * delta[:, :, 0]) <= max_lat
+            valid &= (~far) | (dot_oc & dot_ic & lat)
+        if not np.any(valid):
+            break
+        u, v = np.unravel_index(int(np.argmin(np.where(valid, dist, np.inf))), dist.shape)
+        i, rev_i = int(u % m), bool(u >= m)
+        j, rev_j = int(v % m), bool(v >= m)
+        ci = chains[i][::-1] if rev_i else chains[i]
+        cj = chains[j][::-1] if rev_j else chains[j]
+        merged = np.vstack((ci, cj[1:] if np.linalg.norm(cj[0] - ci[-1]) < 1e-3 else cj))
+        hi, lo = max(i, j), min(i, j)
+        chains.pop(hi)
+        chains.pop(lo)
+        chains.append(merged.astype(np.float32))
+    return chains
+
+
+def _extract_clean_paths(mask, drivable_mask=None, exclude_mask=None, *,
+                         min_len=2.0, max_gap=10.0, fit=True):
+    binary = (np.asarray(mask, np.float32) >= .5)
+    if drivable_mask is not None:
+        binary = binary & (_dilate_road(drivable_mask, 0.9) > 0)
+    if exclude_mask is not None:
+        excl = cv2.dilate((np.asarray(exclude_mask, np.float32) >= .5).astype(np.uint8),
+                          cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)))
+        binary = binary & (excl == 0)
+    if not binary.any():
+        return []
+    raw_paths = centerlines(binary.astype(np.float32))
+    closed_paths, open_paths = [], []
+    for path in raw_paths:
+        if len(path) >= 3 and np.array_equal(path[0], path[-1]):
+            closed_paths.append(np.asarray(path, np.float32))
+        else:
+            open_paths.append(np.asarray(path, np.float32))
+    merged = _merge_collinear_paths(open_paths, max_gap=max_gap)
+    out = []
+    for path in merged:
+        if _arc_length(path) < min_len:
+            continue
+        sampled = _resample_open(path, step=0.5)
+        if fit and len(sampled) >= 4:
+            sampled = fit_curve(sampled, closed=False)
+        if _arc_length(sampled) >= min_len:
+            out.append(sampled.astype(np.float32))
+    for path in closed_paths:
+        if _arc_length(path) < min_len:
+            continue
+        if fit and len(path) > 4:
+            curve = fit_curve(path[:-1], closed=True)
+            path = np.vstack((curve, curve[0])).astype(np.float32)
+        out.append(path)
+    return out
+
+
+def _slice_dashes(paths, *, dash_len=3.0, gap_len=5.5, min_dash_len=0.8):
+    period = float(dash_len + gap_len)
+    dashes = []
+    for path in paths:
+        pts = _resample_open(path, step=0.35)
+        if len(pts) < 2:
+            continue
+        seg = np.linalg.norm(np.diff(pts, axis=0), axis=1)
+        s = np.r_[0.0, np.cumsum(seg)]
+        if s[-1] < min_dash_len:
+            continue
+        span = pts[-1] - pts[0]
+        mean_dir = span / max(float(np.linalg.norm(span)), 1e-6)
+        s_global = s + float(np.dot(pts[0], mean_dir))
+        k0 = int(np.floor((s_global[0] - dash_len) / period))
+        k1 = int(np.ceil(s_global[-1] / period))
+        for k in range(k0, k1 + 1):
+            a = max(float(s_global[0]), k * period)
+            b = min(float(s_global[-1]), k * period + float(dash_len))
+            if b - a < min_dash_len:
+                continue
+            mid_mask = (s_global > a + 1e-4) & (s_global < b - 1e-4)
+            s_sample = np.r_[a, s_global[mid_mask], b]
+            dash = np.column_stack((np.interp(s_sample, s_global, pts[:, 0]),
+                                    np.interp(s_sample, s_global, pts[:, 1]))).astype(np.float32)
+            dashes.append(dash)
+    return dashes
+
+
+def dashed_lane_paths(mask, drivable_mask=None, *, fit=True):
+    """Cleaned continuous polylines tracing dashed lane dividers."""
+    return _extract_clean_paths(mask, drivable_mask, min_len=2.0, max_gap=10.0, fit=fit)
+
+
+def solid_lane_paths(mask, drivable_mask=None, dashed_mask=None, *, fit=True):
+    """Cleaned continuous polylines tracing solid lane/shoulder markings."""
+    return _extract_clean_paths(mask, drivable_mask, exclude_mask=dashed_mask,
+                                min_len=3.0, max_gap=3.5, fit=fit)
+
+
+def pack_paths(paths):
+    """Pack continuous polylines into `(points, normal, segment_starts)` for ribbon/curb sweeping."""
+    return _pack_paths(paths)
+
+
+def pack_dashed_paths(paths, *, dash_len=3.0, gap_len=5.5):
+    """Procedurally slice smooth lane polylines into uniform Car-OS dashes."""
+    return _pack_paths(_slice_dashes(paths, dash_len=dash_len, gap_len=gap_len))
+
+
+def dashed_segments(mask, drivable_mask=None, *, dash_len=3.0, gap_len=5.5, fit=False):
+    """Procedural uniform dashed lane strips snapped to smoothed dashed centerlines."""
+    paths = dashed_lane_paths(mask, drivable_mask, fit=fit)
+    return pack_dashed_paths(paths, dash_len=dash_len, gap_len=gap_len)
+
+
+def solid_segments(mask, drivable_mask=None, dashed_mask=None, *, fit=False):
+    """Cleaned continuous solid lane markings inside the drivable road."""
+    return _pack_paths(solid_lane_paths(mask, drivable_mask, dashed_mask=dashed_mask, fit=fit))
+
+
+def _split_ring_on_roi(ring, *, min_arc_len=4.0, fit=False):
+    on_roi = ((ring[:, 0] >= X_MAX - 1.6) | (ring[:, 0] <= X_MIN + 1.6) |
+              (np.abs(ring[:, 1]) >= Y_MAX - 1.4))
+    inside = ~on_roi
+    if inside.all():
+        closed = np.vstack((ring, ring[0])).astype(np.float32)
+        return [closed] if _arc_length(closed) >= min_arc_len else []
+    if not inside.any():
+        return []
+    cut = int(np.flatnonzero(on_roi)[0])
+    rolled_ring = np.roll(ring, -cut, axis=0)
+    rolled_in = np.roll(inside, -cut)
+    edges = np.flatnonzero(np.diff(np.r_[False, rolled_in, False].astype(np.int8)))
+    arcs = []
+    for start, end in edges.reshape(-1, 2):
+        if end - start >= 2:
+            arc = rolled_ring[start:end].astype(np.float32)
+            if _arc_length(arc) >= min_arc_len:
+                if fit:
+                    arc = _resample_open(arc, step=1.0)
+                    if len(arc) >= 6:
+                        arc = fit_curve(arc, closed=False).astype(np.float32)
+                arcs.append(arc)
+    return arcs
+
+
+def _curb_paths_from_contours(rings, hier, *, fit=False):
+    curb_paths = []
+    min_hole_area = 40.0 * DX * DY
+    if hier is not None:
+        for i, (_, _, _, parent) in enumerate(hier):
+            ring = rings[i]
+            if len(ring) < 3:
+                continue
+            if parent >= 0 and _ring_area(ring) < min_hole_area:
+                continue
+            curb_paths.extend(_split_ring_on_roi(ring, min_arc_len=4.0, fit=fit))
+    return curb_paths
+
+
+def road_surface_and_curbs(clean_road, *, fit=True):
+    """Build triangulated road surface and continuous open border curbs from one contour pass."""
+    rings, hier, _ = _surface_contours(clean_road, fit=fit)
+    triangles = _triangulate_contours(rings, hier)
+    curbs = _pack_paths(_curb_paths_from_contours(rings, hier, fit=fit))
+    return triangles, curbs
+
+
+def road_curb_paths(drivable_prob, edge_prob=None, *, fit=False):
+    """Continuous open curb barriers extracted from cleaned road outer/median contours."""
+    del edge_prob  # CARLA junction internal edge masks create cobweb artifacts across intersections.
+    clean = clean_drivable_mask(drivable_prob)
+    rings, hier, _ = _surface_contours(clean, fit=fit)
+    return _pack_paths(_curb_paths_from_contours(rings, hier, fit=fit))
+
+
+def estimate_road_tangent(xy, lane_paths):
+    """Nearest smooth polyline tangent angle (rad) and distance (m) for BEV query points."""
+    pts = np.atleast_2d(np.asarray(xy, np.float32))
+    n = len(pts)
+    if not lane_paths or n == 0:
+        return np.zeros(n, np.float32), np.full(n, np.inf, np.float32)
+    starts, ends = [], []
+    for path in lane_paths:
+        arr = np.asarray(path, np.float32)
+        if len(arr) >= 2:
+            starts.append(arr[:-1])
+            ends.append(arr[1:])
+    if not starts:
+        return np.zeros(n, np.float32), np.full(n, np.inf, np.float32)
+    a = np.concatenate(starts, axis=0)
+    b = np.concatenate(ends, axis=0)
+    ab = b - a
+    len2 = np.sum(ab * ab, axis=1)
+    keep = len2 > 1e-6
+    if not keep.any():
+        return np.zeros(n, np.float32), np.full(n, np.inf, np.float32)
+    a, ab, len2 = a[keep], ab[keep], len2[keep]
+    angles = np.arctan2(ab[:, 1], ab[:, 0]).astype(np.float32)
+    ap = pts[:, None, :] - a[None, :, :]
+    t = np.clip(np.sum(ap * ab[None, :, :], axis=-1) / len2[None, :], 0.0, 1.0)
+    closest = a[None, :, :] + t[:, :, None] * ab[None, :, :]
+    dist2 = np.sum((pts[:, None, :] - closest) ** 2, axis=-1)
+    best = dist2.argmin(axis=1)
+    return angles[best], np.sqrt(dist2[np.arange(n), best]).astype(np.float32)
+
+
 def sweep_segments(mask, *, fit=False):
     paths = centerlines(mask)
     if fit:
@@ -147,17 +494,4 @@ def sweep_segments(mask, *, fit=False):
             curve = fit_curve(path[:-1] if closed else path, closed)
             fitted.append(np.vstack((curve, curve[0])) if closed else curve)
         paths = fitted
-    if not paths:
-        return None
-    lengths = np.array([len(path) for path in paths])
-    points = np.concatenate(paths)
-    start = np.r_[0, lengths.cumsum()[:-1]]
-    end = lengths.cumsum() - 1
-    tangent = np.roll(points, -1, axis=0) - np.roll(points, 1, axis=0)
-    tangent[start] = points[start+1] - points[start]
-    tangent[end] = points[end] - points[end-1]
-    normal = np.column_stack((-tangent[:, 1], tangent[:, 0]))
-    normal /= np.maximum(np.linalg.norm(normal, axis=1, keepdims=True), 1e-6)
-    segments = np.ones(len(points), bool)
-    segments[end] = False
-    return points, normal, np.flatnonzero(segments)
+    return _pack_paths(paths)

@@ -14,6 +14,7 @@
 !/viewer/
 !/v1_dual_system/
 !/v2_mapless_wa/
+!/v3_world_model/
 !/v7_mapless_wa/
 /v7_mapless_wa/*
 !/v7_mapless_wa/config.yaml

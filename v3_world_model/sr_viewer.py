@@ -10,7 +10,11 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 from .geometry import H, W, metric
-from .sr_geometry import sweep_segments, surface_triangles, temporal_probabilities
+from .sr_geometry import (clean_drivable_mask, dashed_lane_paths, dashed_segments,
+                          pack_dashed_paths, pack_paths, road_surface_and_curbs,
+                          solid_lane_paths, solid_segments, surface_triangles,
+                          sweep_segments, temporal_probabilities)
+from .sr_postprocess import SRPostProcessor
 from .labels import OBJECT_SLOTS
 from .qc_v3 import load_npz
 
@@ -65,7 +69,8 @@ class FontPack:
 
 
 def prediction_scene(pred, *, speed=0., cruise=0., intent="Follow", alternatives=(),
-                     previous_scene=None, ego_motion=None, steer=0., throttle=0., brake=0.,
+                     previous_scene=None, ego_motion=None, lidar_bev=None,
+                     postprocessor=None, clean=None, steer=0., throttle=0., brake=0.,
                      accel_lon=0., thw=None, infer_ms=None, limit=80.,
                      nav_hint="", mode="LIVE"):
     """Convert one batched model result into the unbatched renderer contract."""
@@ -77,26 +82,64 @@ def prediction_scene(pred, *, speed=0., cruise=0., intent="Follow", alternatives
     cls = as_numpy(pred["cls_logits"]).argmax(axis=-1)
     scores = as_numpy(pred["obj_logits"].float().sigmoid())
     visible = scores > .5
-    boxes = np.column_stack((geom[:, :6], yaw, geom[:, 8:10], cls, visible)).astype(np.float32)
-    decelerating = np.zeros(OBJECT_SLOTS, dtype=bool)
-    if previous_scene is not None:
+    raw_boxes = np.column_stack((geom[:, :6], yaw, geom[:, 8:10], cls, visible)).astype(np.float32)
+
+    probs = as_numpy(pred["lane_logits"].float().sigmoid())
+    if mode == "LIVE" and previous_scene is not None:
+        probs = temporal_probabilities(probs, previous_scene.get("lane_probs"), ego_motion)
+
+    use_clean = (mode == "LIVE" or postprocessor is not None) if clean is None else bool(clean)
+    if lidar_bev is not None and hasattr(lidar_bev, "detach"):
+        lidar_np = lidar_bev.detach().float().cpu().numpy()
+        lidar_bev = lidar_np[0] if lidar_np.ndim == 4 else lidar_np
+
+    slots = max(OBJECT_SLOTS, len(raw_boxes))
+    track_ids = np.full(slots, -1, dtype=np.int32)
+    decelerating = np.zeros(slots, dtype=bool)
+    sr_cache = None
+    if use_clean:
+        clean_road = clean_drivable_mask(probs[0])
+        dashed_paths = dashed_lane_paths(probs[1], clean_road, fit=True)
+        solid_paths = solid_lane_paths(probs[2], clean_road, probs[1], fit=True)
+        lane_paths = dashed_paths + solid_paths
+        sr_cache = dict(probs=probs, clean_road=clean_road, dashed_paths=dashed_paths, solid_paths=solid_paths)
+        if postprocessor is not None:
+            boxes, out_scores, track_ids, decelerating = postprocessor.update(
+                raw_boxes, scores, drivable_mask=clean_road, lane_paths=lane_paths,
+                lidar_bev=lidar_bev, ego_delta=ego_motion,
+            )
+        else:
+            kept, kept_scores = SRPostProcessor.clean_frame(
+                raw_boxes, scores, drivable_mask=clean_road, lane_paths=lane_paths,
+                lidar_bev=lidar_bev,
+            )
+            boxes = np.zeros((slots, 11), dtype=np.float32)
+            out_scores = np.zeros((slots,), dtype=np.float32)
+            n_keep = min(len(kept), slots)
+            if n_keep:
+                boxes[:n_keep] = kept[:n_keep]
+                out_scores[:n_keep] = kept_scores[:n_keep]
+    else:
+        boxes = raw_boxes
+        out_scores = scores
+
+    if previous_scene is not None and not (use_clean and postprocessor is not None):
         previous = np.asarray(previous_scene["boxes"])
-        for i in np.flatnonzero(visible):
-            candidates = previous[(previous[:, -1] > .5) & (previous[:, 9] == cls[i])]
+        for i in np.flatnonzero(boxes[:, -1] > .5):
+            candidates = previous[(previous[:, -1] > .5) & (previous[:, 9] == boxes[i, 9])]
             if len(candidates):
                 distances = np.linalg.norm(candidates[:, :2] - boxes[i, :2], axis=1)
                 match = candidates[distances.argmin()]
                 decelerating[i] = distances.min() < 3. and match[7] - boxes[i, 7] > .38
-    probs = as_numpy(pred["lane_logits"].float().sigmoid())
-    if mode == "LIVE" and previous_scene is not None:
-        probs = temporal_probabilities(probs, previous_scene.get("lane_probs"), ego_motion)
+
     return dict(lanes=probs > .5, lane_probs=probs, boxes=boxes,
                 future_occupancy=as_numpy(pred["future_occupancy_logits"]) > 0.,
                 trajectory=as_numpy(pred["trajectory"]), speed=speed, cruise=cruise,
                 intent=intent, alternatives=alternatives, decelerating=decelerating,
-                steer=steer, throttle=throttle, brake=brake, accel_lon=accel_lon,
-                thw=thw, infer_ms=infer_ms, limit=limit, nav_hint=nav_hint, mode=mode,
-                source="model", object_scores=scores, fit_geometry=mode == "LIVE")
+                track_ids=track_ids, steer=steer, throttle=throttle, brake=brake,
+                accel_lon=accel_lon, thw=thw, infer_ms=infer_ms, limit=limit,
+                nav_hint=nav_hint, mode=mode, source="model",
+                object_scores=out_scores, fit_geometry=use_clean, _sr_cache=sr_cache)
 
 
 def from_capture(frame):
@@ -438,8 +481,7 @@ class SceneMesh:
         self.opaque = []
         self.blend = [RANGE_RINGS_11] if len(RANGE_RINGS_11) else []
 
-    def mask_surface(self, mask, z, rgba, mat=.05, *, fit=False):
-        xy = surface_triangles(mask, fit=fit)
+    def _emit_surface_triangles(self, xy, z, rgba, mat=.05):
         if not len(xy):
             return
         verts = np.column_stack((xy, np.full(len(xy), z, np.float32)))
@@ -447,15 +489,17 @@ class SceneMesh:
         col = np.broadcast_to(np.asarray(rgba, np.float32), (len(verts), 4))
         self.opaque.append(np.concatenate((verts, n, col, np.full((len(verts), 1), mat, np.float32)), axis=-1))
 
-    def lane_strips(self, mask, z, rgba, width, *, fit=False):
-        sweep = sweep_segments(mask, fit=fit)
+    def mask_surface(self, mask, z, rgba, mat=.05, *, fit=False):
+        self._emit_surface_triangles(surface_triangles(mask, fit=fit), z, rgba, mat=mat)
+
+    def _emit_lane_sweep(self, sweep, z, rgba, width):
         if sweep is None:
             return
         xy, norm, segments = sweep
         n_up = np.array([0., 0., 1.], np.float32)
         left = np.column_stack((xy + (width * .5) * norm, np.full(len(xy), z, np.float32)))
         right = np.column_stack((xy - (width * .5) * norm, np.full(len(xy), z, np.float32)))
-        quads = np.stack((left[segments], right[segments], right[segments+1], left[segments+1]), axis=1)
+        quads = np.stack((left[segments], right[segments], right[segments + 1], left[segments + 1]), axis=1)
         verts = quads[:, QUAD_TRI].reshape(-1, 3)
         self.opaque.append(np.concatenate((
             verts,
@@ -464,8 +508,10 @@ class SceneMesh:
             np.zeros((len(verts), 1), np.float32),
         ), axis=-1))
 
-    def curb_barriers(self, mask, z_base=-.01, height=.20, base_half=.25, top_half=.13, *, fit=False):
-        sweep = sweep_segments(mask, fit=fit)
+    def lane_strips(self, mask, z, rgba, width, *, fit=False):
+        self._emit_lane_sweep(sweep_segments(mask, fit=fit), z, rgba, width)
+
+    def _emit_curb_sweep(self, sweep, z_base=-.01, height=.20, base_half=.25, top_half=.13):
         if sweep is None:
             return
         xy, norm, segments = sweep
@@ -477,7 +523,7 @@ class SceneMesh:
         tl = np.column_stack((xy + top_half * norm, np.full(len(xy), z_base + height, np.float32)))
         tr = np.column_stack((xy - top_half * norm, np.full(len(xy), z_base + height, np.float32)))
         rings = np.stack((br, tr, tl, bl), axis=1)  # (K, 4, 3)
-        a, b = rings[segments], rings[segments+1]
+        a, b = rings[segments], rings[segments + 1]
         q_parts = []
         for j in range(4):
             jn = (j + 1) % 4
@@ -488,6 +534,9 @@ class SceneMesh:
         mats = np.concatenate([np.full(seg_n, m, np.float32) for m in (.30, .42, .30, .20)])
         centers = np.repeat(np.tile((a.mean(axis=1) + b.mean(axis=1)) * .5, (4, 1)), 2, axis=0)
         self.opaque.append(_quads_to_tris_batch(quads, cols, mats, outward_center=centers))
+
+    def curb_barriers(self, mask, z_base=-.01, height=.20, base_half=.25, top_half=.13, *, fit=False):
+        self._emit_curb_sweep(sweep_segments(mask, fit=fit), z_base, height, base_half, top_half)
 
     def vehicle(self, box, color, ego=False, urgent=False, decelerating=False):
         cx, cy, cz, L, W_v, H_v, yaw = [float(v) for v in box[:7]]
@@ -566,14 +615,30 @@ def build_scene(scene, show_occupancy=False):
     ground_q = np.array([[[115., 75., -.035], [115., -75., -.035], [-45., -75., -.035], [-45., 75., -.035]]], np.float32)
     mesh.opaque.append(_quads_to_tris_batch(ground_q, (.055, .072, .098, 1.), 0.))
     fit = scene.get("fit_geometry", False)
-    mesh.mask_surface(masks[0], 0., DRIVABLE_RGB, mat=.05, fit=fit)
-    mesh.lane_strips(masks[1], .014, DASHED_RGB, width=.20, fit=fit)
-    mesh.lane_strips(masks[2], .018, SOLID_RGB, width=.24, fit=fit)
-    # CARLA junction labels can contain boundaries internal to overlapping lane strips.
-    # Extrude curbs only near an actual drivable/non-drivable interface.
-    interface = cv2.morphologyEx((masks[0] >= .5).astype(np.uint8), cv2.MORPH_GRADIENT,
-                                 cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)))
-    mesh.curb_barriers(masks[3] * interface, fit=fit)
+    if fit:
+        cache = scene.get("_sr_cache")
+        if cache is not None and cache.get("probs") is scene.get("lane_probs"):
+            clean_road = cache["clean_road"]
+            dashed_sweep = pack_dashed_paths(cache["dashed_paths"])
+            solid_sweep = pack_paths(cache["solid_paths"])
+        else:
+            clean_road = clean_drivable_mask(masks[0])
+            dashed_sweep = dashed_segments(masks[1], clean_road, fit=True)
+            solid_sweep = solid_segments(masks[2], clean_road, masks[1], fit=True)
+        road_xy, curb_sweep = road_surface_and_curbs(clean_road, fit=True)
+        mesh._emit_surface_triangles(road_xy, 0., DRIVABLE_RGB, mat=.05)
+        mesh._emit_lane_sweep(dashed_sweep, .014, DASHED_RGB, width=.20)
+        mesh._emit_lane_sweep(solid_sweep, .018, SOLID_RGB, width=.24)
+        mesh._emit_curb_sweep(curb_sweep)
+    else:
+        mesh.mask_surface(masks[0], 0., DRIVABLE_RGB, mat=.05, fit=False)
+        mesh.lane_strips(masks[1], .014, DASHED_RGB, width=.20, fit=False)
+        mesh.lane_strips(masks[2], .018, SOLID_RGB, width=.24, fit=False)
+        # CARLA junction labels can contain boundaries internal to overlapping lane strips.
+        # Extrude curbs only near an actual drivable/non-drivable interface.
+        interface = cv2.morphologyEx((masks[0] >= .5).astype(np.uint8), cv2.MORPH_GRADIENT,
+                                     cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)))
+        mesh.curb_barriers(masks[3] * interface, fit=False)
 
     decel = scene.get("decelerating", np.zeros(OBJECT_SLOTS, dtype=bool))
     speed = float(scene.get("speed", 0.))
@@ -1016,9 +1081,9 @@ class SRViewer:
                     base = base * (amb + 0.65 * ndl1 + 0.22 * ndl2) + vec3(spec) + rim_col * fresnel;
                 }
                 float d = length(vec2(max(v_pos.x, 0.0) * 0.95, abs(v_pos.y) * 1.15));
-                float fog = smoothstep(38.0, 79.0, d);
+                float fog = smoothstep(32.0, 62.0, d);
                 base = mix(base, vec3(0.068, 0.098, 0.148), fog);
-                alpha *= (1.0 - smoothstep(66.0, 81.0, d));
+                alpha *= (1.0 - smoothstep(52.0, 68.0, d));
                 pixel = vec4(clamp(base, 0.0, 1.0), alpha);
             }
             """)
@@ -1058,7 +1123,7 @@ class SRViewer:
                 vec3 col = mix(vec3(0.10, 0.45, 0.96), vec3(0.32, 0.80, 1.0), clamp(core + 0.5 * edge_rail, 0.0, 1.0));
                 float entry = smoothstep(0.0, 0.035, s);
                 float d = length(vec2(max(v_pos.x, 0.0) * 0.95, abs(v_pos.y) * 1.15));
-                float far_fade = 1.0 - smoothstep(55.0, 79.0, d);
+                float far_fade = 1.0 - smoothstep(48.0, 66.0, d);
                 float alpha = v_rgba.a * intensity * entry * far_fade;
                 pixel = vec4(col, clamp(alpha, 0.0, 0.94));
             }
