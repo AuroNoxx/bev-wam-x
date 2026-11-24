@@ -8,6 +8,9 @@ from scipy.spatial import cKDTree
 from .geometry import FUTURE_TICKS, H, W, X_MAX, X_MIN, Y_MAX, Y_MIN, Z, Z_EDGES, local, pixels, wrap
 
 LANE_CHANNELS = ("drivable_area", "dashed_line", "solid_line", "road_edge")
+MAP_CLASSES = ("dashed_divider", "solid_divider", "road_edge")
+MAP_SLOTS = 24
+MAP_POINTS = 20
 VECTOR_NAMES = ("ego_center", "left_line", "right_line", "left_edge", "right_edge",
                 "left_neighbor", "right_neighbor")
 VECTOR_X = np.linspace(-20., 55., 24, dtype=np.float32)

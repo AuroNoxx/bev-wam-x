@@ -37,13 +37,13 @@ def matrix(transform):
 
 
 @contextmanager
-def synchronous(world, traffic=None, seed=0):
+def synchronous(world, traffic=None, seed=0, *, dt=DT):
     original = world.get_settings()
     weather = world.get_weather()
     settings = world.get_settings()
     settings.synchronous_mode = True
     settings.no_rendering_mode = False
-    settings.fixed_delta_seconds = DT
+    settings.fixed_delta_seconds = dt
     settings.substepping = True
     settings.max_substep_delta_time = CFG["physics"]["max_substep_delta_time"]
     settings.max_substeps = CFG["physics"]["max_substeps"]
@@ -92,22 +92,22 @@ class Rig:
             callback = self.queues[name].put
         actor.listen(callback)
 
-    def cameras(self, kind="rgb"):
+    def cameras(self, kind="rgb", *, sensor_tick=0):
         for name, cam in CAMERAS.items():
             x, y, z, yaw, pitch, fov = cam["pose"]
             width, height = cam["size"]
             tf = self.carla.Transform(self.carla.Location(x, y, z),
                                       self.carla.Rotation(yaw=yaw, pitch=pitch))
-            attrs = dict(image_size_x=width, image_size_y=height, fov=fov, sensor_tick=0)
+            attrs = dict(image_size_x=width, image_size_y=height, fov=fov, sensor_tick=sensor_tick)
             if kind == "rgb":
                 attrs["enable_postprocess_effects"] = CFG["rgb"]["enable_postprocess_effects"]
             self.attach(f"{kind}/{name}", f"sensor.camera.{kind}", tf, attrs)
 
-    def lidar(self, semantic=False):
+    def lidar(self, semantic=False, *, sensor_tick=0):
         cfg = CFG["lidar"]
         tf = self.carla.Transform(self.carla.Location(*cfg["pose_xyz"]))
         attrs = {k: v for k, v in cfg.items() if k != "pose_xyz"}
-        attrs["sensor_tick"] = 0
+        attrs["sensor_tick"] = sensor_tick
         if not semantic:
             attrs["dropoff_general_rate"] = 0
         self.attach("semantic_lidar" if semantic else "lidar",
@@ -118,6 +118,10 @@ class Rig:
         snapshot = self.world.get_snapshot()
         if snapshot.frame != fid:
             raise RuntimeError(f"World frame {snapshot.frame} != tick {fid}; use one clock owner")
+        return snapshot, self.read_sensors(snapshot)
+
+    def read_sensors(self, snapshot):
+        fid = snapshot.frame
         bundle = {}
         deadline = monotonic() + 30
         for name, inbox in self.queues.items():
@@ -129,7 +133,7 @@ class Rig:
                     raise RuntimeError(f"Sensor {name} skipped/misaligned at {fid}: {frame.frame}")
                 bundle[name] = frame
                 break
-        return snapshot, bundle
+        return bundle
 
 
 def bgr(image):

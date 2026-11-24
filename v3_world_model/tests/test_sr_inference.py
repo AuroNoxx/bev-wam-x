@@ -180,6 +180,42 @@ class SRInferenceTests(unittest.TestCase):
         self.assertTrue(live["fit_geometry"])
         self.assertEqual(int((live["boxes"][:, -1] > 0.5).sum()), 0)
 
+    def test_footprint_nms_suppresses_split_and_phantom_two_wheeler_keeps_neighbor_lane(self):
+        xy = grid()
+        road = (np.abs(xy[..., 1]) <= 8.0).astype(np.float32)
+        lane_paths = [np.array([[-30.0, 0.0], [60.0, 0.0]], dtype=np.float32)]
+        raw_boxes = np.array([
+            [20.0, 0.0, 0.5, 4.6, 1.9, 1.5, 0.0, 8.0, 0.0, 0.0, 1.0],   # primary car
+            [22.8, 0.0, 0.5, 4.6, 1.9, 1.5, 0.02, 8.0, 0.0, 0.0, 1.0],  # along-track split duplicate -> drop
+            [21.0, 0.4, 0.5, 2.0, 0.8, 1.4, 0.05, 8.0, 0.0, 3.0, 1.0],  # phantom two_wheeler on same car -> drop
+            [20.0, 3.5, 0.5, 4.6, 1.9, 1.5, 0.0, 8.0, 0.0, 0.0, 1.0],   # adjacent lane car -> keep
+        ], dtype=np.float32)
+        scores = np.array([0.88, 0.72, 0.68, 0.85], dtype=np.float32)
+
+        kept, _ = SRPostProcessor.clean_frame(raw_boxes, scores, road, lane_paths)
+        self.assertEqual(len(kept), 2)
+        ys = sorted(float(y) for y in kept[:, 1])
+        self.assertAlmostEqual(ys[0], 0.0, delta=0.2)
+        self.assertAlmostEqual(ys[1], 3.5, delta=0.2)
+
+    def test_tracker_suppresses_stale_overlapping_track(self):
+        xy = grid()
+        road = (np.abs(xy[..., 1]) <= 8.0).astype(np.float32)
+        lane_paths = [np.array([[-30.0, 0.0], [60.0, 0.0]], dtype=np.float32)]
+        pp = SRPostProcessor()
+
+        frame0 = np.array([[20.0, 0.0, 0.5, 4.6, 1.9, 1.5, 0.0, 0.0, 0.0, 0.0, 1.0]], dtype=np.float32)
+        b0, _, _, _ = pp.update(frame0, np.array([0.82], np.float32), road, lane_paths)
+        self.assertEqual(int((b0[:, -1] > 0.5).sum()), 1)
+
+        # Jumped high-confidence front-half detection outside Hungarian gate (4.2m > 3.8m)
+        # must suppress the stale unmatched frame0 track rather than cloning the car.
+        frame1 = np.array([[24.2, 0.0, 0.5, 4.6, 1.9, 1.5, 0.0, 0.0, 0.0, 0.0, 1.0]], dtype=np.float32)
+        b1, _, _, _ = pp.update(frame1, np.array([0.85], np.float32), road, lane_paths)
+        active1 = b1[b1[:, -1] > 0.5]
+        self.assertEqual(len(active1), 1)
+        self.assertAlmostEqual(float(active1[0, 0]), 24.2, delta=0.2)
+
 
 if __name__ == '__main__':
     unittest.main()

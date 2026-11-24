@@ -27,7 +27,7 @@ CURB_RGB = (.36, .43, .52, 1.)
 FACES = np.array([[0, 3, 2, 1], [4, 5, 6, 7], [0, 1, 5, 4], [1, 2, 6, 5], [2, 3, 7, 6], [3, 0, 4, 7]], dtype=np.int64)
 QUAD_TRI = np.array([0, 1, 2, 0, 2, 3], dtype=np.int64)
 PRESETS = (
-    ("CHASE", -12., 13., 28., (17., 0., .65), 62.),
+    ("CHASE", 0., 13., 28., (17., 0., .65), 62.),
     ("ELEVATED", 0., 52., 43., (17., 0., .20), 67.),
     ("TOP", 0., 76., 38., (12., 0., 0.), 40.),
 )
@@ -86,7 +86,7 @@ def prediction_scene(pred, *, speed=0., cruise=0., intent="Follow", alternatives
 
     probs = as_numpy(pred["lane_logits"].float().sigmoid())
     if mode == "LIVE" and previous_scene is not None:
-        probs = temporal_probabilities(probs, previous_scene.get("lane_probs"), ego_motion)
+        probs = temporal_probabilities(probs, previous_scene.get("lane_probs"), ego_motion, current_weight=0.45)
 
     use_clean = (mode == "LIVE" or postprocessor is not None) if clean is None else bool(clean)
     if lidar_bev is not None and hasattr(lidar_bev, "detach"):
@@ -97,10 +97,25 @@ def prediction_scene(pred, *, speed=0., cruise=0., intent="Follow", alternatives
     track_ids = np.full(slots, -1, dtype=np.int32)
     decelerating = np.zeros(slots, dtype=bool)
     sr_cache = None
+    map_vis = None
+    if all(k in pred for k in ("map_polylines", "map_cls_logits", "map_obj_logits")):
+        m_pts = as_numpy(pred["map_polylines"])
+        m_cls = as_numpy(pred["map_cls_logits"]).argmax(axis=-1)
+        m_sc = as_numpy(pred["map_obj_logits"].float().sigmoid())
+        map_vis = {"dashed": [], "solid": [], "edge": []}
+        m_names = ("dashed", "solid", "edge")
+        for mi in np.flatnonzero(m_sc > 0.5):
+            if np.isfinite(m_pts[mi]).all():
+                map_vis[m_names[int(m_cls[mi])]].append(m_pts[mi].astype(np.float32))
+
     if use_clean:
         clean_road = clean_drivable_mask(probs[0])
-        dashed_paths = dashed_lane_paths(probs[1], clean_road, fit=True)
-        solid_paths = solid_lane_paths(probs[2], clean_road, probs[1], fit=True)
+        if map_vis is not None and (map_vis["dashed"] or map_vis["solid"]):
+            dashed_paths = map_vis["dashed"]
+            solid_paths = map_vis["solid"]
+        else:
+            dashed_paths = dashed_lane_paths(probs[1], clean_road, fit=True)
+            solid_paths = solid_lane_paths(probs[2], clean_road, probs[1], fit=True)
         lane_paths = dashed_paths + solid_paths
         sr_cache = dict(probs=probs, clean_road=clean_road, dashed_paths=dashed_paths, solid_paths=solid_paths)
         if postprocessor is not None:
@@ -139,7 +154,8 @@ def prediction_scene(pred, *, speed=0., cruise=0., intent="Follow", alternatives
                 track_ids=track_ids, steer=steer, throttle=throttle, brake=brake,
                 accel_lon=accel_lon, thw=thw, infer_ms=infer_ms, limit=limit,
                 nav_hint=nav_hint, mode=mode, source="model",
-                object_scores=out_scores, fit_geometry=use_clean, _sr_cache=sr_cache)
+                object_scores=out_scores, fit_geometry=use_clean, _sr_cache=sr_cache,
+                map_polylines_vis=map_vis)
 
 
 def from_capture(frame):
@@ -615,6 +631,8 @@ def build_scene(scene, show_occupancy=False):
     ground_q = np.array([[[115., 75., -.035], [115., -75., -.035], [-45., -75., -.035], [-45., 75., -.035]]], np.float32)
     mesh.opaque.append(_quads_to_tris_batch(ground_q, (.055, .072, .098, 1.), 0.))
     fit = scene.get("fit_geometry", False)
+    vis = scene.get("map_polylines_vis")
+    has_map_vis = isinstance(vis, dict) and any(vis.get(k) for k in ("dashed", "solid", "edge"))
     if fit:
         cache = scene.get("_sr_cache")
         if cache is not None and cache.get("probs") is scene.get("lane_probs"):
@@ -623,13 +641,20 @@ def build_scene(scene, show_occupancy=False):
             solid_sweep = pack_paths(cache["solid_paths"])
         else:
             clean_road = clean_drivable_mask(masks[0])
-            dashed_sweep = dashed_segments(masks[1], clean_road, fit=True)
-            solid_sweep = solid_segments(masks[2], clean_road, masks[1], fit=True)
+            dashed_sweep = pack_dashed_paths(vis["dashed"]) if (has_map_vis and vis["dashed"]) else dashed_segments(masks[1], clean_road, fit=True)
+            solid_sweep = pack_paths(vis["solid"]) if (has_map_vis and vis["solid"]) else solid_segments(masks[2], clean_road, masks[1], fit=True)
         road_xy, curb_sweep = road_surface_and_curbs(clean_road, fit=True)
+        if has_map_vis and vis["edge"]:
+            curb_sweep = pack_paths(vis["edge"])
         mesh._emit_surface_triangles(road_xy, 0., DRIVABLE_RGB, mat=.05)
         mesh._emit_lane_sweep(dashed_sweep, .014, DASHED_RGB, width=.20)
         mesh._emit_lane_sweep(solid_sweep, .018, SOLID_RGB, width=.24)
         mesh._emit_curb_sweep(curb_sweep)
+    elif has_map_vis:
+        mesh.mask_surface(masks[0], 0., DRIVABLE_RGB, mat=.05, fit=False)
+        mesh._emit_lane_sweep(pack_dashed_paths(vis["dashed"]), .014, DASHED_RGB, width=.20)
+        mesh._emit_lane_sweep(pack_paths(vis["solid"]), .018, SOLID_RGB, width=.24)
+        mesh._emit_curb_sweep(pack_paths(vis["edge"]))
     else:
         mesh.mask_surface(masks[0], 0., DRIVABLE_RGB, mat=.05, fit=False)
         mesh.lane_strips(masks[1], .014, DASHED_RGB, width=.20, fit=False)
@@ -944,7 +969,7 @@ def hud(scene, fps, *, size=(1280, 720), gpu_ms=None, show_occupancy=False,
 
 
 class SRViewer:
-    def __init__(self, size=(1280, 720), backend="auto", window=False):
+    def __init__(self, size=(1280, 720), backend="auto", window=False, *, maximized=False):
         self.size = tuple(size)
         self.window = None
         self.ctx = None
@@ -963,7 +988,7 @@ class SRViewer:
                 raise ValueError("Window mode requires an OpenGL context")
             return
         try:
-            self.open_gl(window)
+            self.open_gl(window, maximized)
         except (RuntimeError, ValueError, OSError, ImportError):
             self.close()
             if backend == "gpu" or window:
@@ -974,7 +999,7 @@ class SRViewer:
         self.preset_index = idx % len(PRESETS)
         _, self.azimuth, self.elevation, self.distance, self.target, self.fov = PRESETS[self.preset_index]
 
-    def open_gl(self, visible):
+    def open_gl(self, visible, maximized=False):
         import moderngl
 
         if not visible:
@@ -993,7 +1018,8 @@ class SRViewer:
             glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
             glfw.window_hint(glfw.SAMPLES, 4)
             glfw.window_hint(glfw.VISIBLE, visible)
-            glfw.window_hint(glfw.RESIZABLE, False)
+            glfw.window_hint(glfw.RESIZABLE, maximized)
+            glfw.window_hint(glfw.MAXIMIZED, maximized)
             self.window = glfw.create_window(*self.size, "BEV-WAM-X 3D SR", None, None)
             if not self.window:
                 raise RuntimeError("Could not create GLFW OpenGL context")
@@ -1144,9 +1170,10 @@ class SRViewer:
             """, fragment_shader="""
             #version 330
             uniform sampler2D tex;
+            uniform bool flip_y;
             in vec2 uv;
             out vec4 pixel;
-            void main() { pixel = texture(tex, uv); }
+            void main() { pixel = texture(tex, vec2(uv.x, flip_y ? 1.0 - uv.y : uv.y)); }
             """)
         self.hud_vao = ctx.vertex_array(self.hud_program, [])
 
@@ -1194,7 +1221,7 @@ class SRViewer:
         if len(vertices):
             self.vao.render(self.gl.TRIANGLES, vertices=len(vertices), first=offset)
 
-    def render(self, pred_dict, readback=True):
+    def render(self, pred_dict, readback=True, *, present=True):
         """Render a prediction-format dictionary and optionally return a BGR uint8 image."""
         now = perf_counter()
         if self.last_frame_time is not None:
@@ -1260,7 +1287,7 @@ class SRViewer:
             self.hud_vao.render(gl.TRIANGLE_STRIP, vertices=4)
             ctx.copy_framebuffer(self.resolved, self.msaa)
         self.gpu_ms = self.timer.elapsed / 1e6
-        if self.window and self.glfw.get_window_attrib(self.window, self.glfw.VISIBLE):
+        if present and self.window and self.glfw.get_window_attrib(self.window, self.glfw.VISIBLE):
             ctx.copy_framebuffer(ctx.screen, self.resolved)
             self.glfw.swap_buffers(self.window)
             self.glfw.poll_events()

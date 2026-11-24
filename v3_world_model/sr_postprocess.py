@@ -85,14 +85,29 @@ def _nms_indices(boxes, scores, iou_thresh=0.12):
         suppress = False
         for k in kept:
             ref = boxes[k]
+            cls_r = int(ref[9])
             if _rotated_iou(cand, ref) > iou_thresh:
                 suppress = True
                 break
-            if cls_c < 3 and int(ref[9]) < 3:
-                dist = float(np.hypot(cand[0] - ref[0], cand[1] - ref[1]))
-                if dist < 2.2:
-                    ang = abs(float(_wrap(cand[6] - ref[6])))
-                    if min(ang, abs(np.pi - ang)) < np.radians(45.0):
+            if cls_c < 4 and cls_r < 4:
+                dx = float(cand[0] - ref[0])
+                dy = float(cand[1] - ref[1])
+                cos_r, sin_r = float(np.cos(ref[6])), float(np.sin(ref[6]))
+                along = dx * cos_r + dy * sin_r
+                across = -dx * sin_r + dy * cos_r
+                ang = abs(float(_wrap(cand[6] - ref[6])))
+                aligned = min(ang, abs(np.pi - ang)) < np.radians(50.0)
+                if (cls_c == 3) != (cls_r == 3):
+                    v_l = float(ref[3] if cls_r < 3 else cand[3])
+                    v_w = float(ref[4] if cls_r < 3 else cand[4])
+                    if abs(along) < 0.65 * v_l + 0.8 and abs(across) < 0.65 * v_w + 0.7:
+                        suppress = True
+                        break
+                elif aligned:
+                    if abs(along) < 0.55 * float(ref[3] + cand[3]) and abs(across) < 0.65 * float(ref[4] + cand[4]):
+                        suppress = True
+                        break
+                    if cls_c < 3 and cls_r < 3 and np.hypot(dx, dy) < 2.8:
                         suppress = True
                         break
         if not suppress:
@@ -132,7 +147,7 @@ class _Track:
 class SRPostProcessor:
     """Stateless Car-OS cleanup plus stateful ego-compensated BEV vehicle tracking."""
 
-    def __init__(self, *, max_missed=2, min_confirm_hits=2, road_dilation_m=2.2, iou_thresh=0.12):
+    def __init__(self, *, max_missed=1, min_confirm_hits=2, road_dilation_m=2.2, iou_thresh=0.12):
         self.max_missed = int(max_missed)
         self.min_confirm_hits = int(min_confirm_hits)
         self.road_dilation_m = float(road_dilation_m)
@@ -157,7 +172,7 @@ class SRPostProcessor:
         finite = np.isfinite(boxes[:, :10]).all(axis=1) & np.isfinite(scores)
         not_ego = ~((np.abs(boxes[:, 0]) < 2.2) & (np.abs(boxes[:, 1]) < 1.1))
         in_roi = (boxes[:, 0] >= X_MIN - 2.0) & (boxes[:, 0] <= X_MAX + 2.0) & (np.abs(boxes[:, 1]) <= Y_MAX + 2.0)
-        base_thresh = 0.38 if lidar_bev is not None else 0.50
+        base_thresh = 0.45 if lidar_bev is not None else 0.50
         keep = finite & not_ego & in_roi & (scores >= base_thresh)
         if not keep.any():
             empty = np.empty((0, 11), dtype=np.float32)
@@ -177,7 +192,7 @@ class SRPostProcessor:
 
         elevated, strong_lidar, empty_ground = _sample_lidar(boxes, lidar_bev)
         if lidar_bev is not None:
-            pass_score = np.where(strong_lidar, 0.38, np.where(elevated, 0.44, 0.50))
+            pass_score = np.where(strong_lidar, 0.45, np.where(elevated, 0.48, 0.52))
             unconfirmed_ground = empty_ground & (scores < np.where(cls_id < 3, 0.65, 0.56))
             lidar_keep = (scores >= pass_score) & (~unconfirmed_ground)
             if not lidar_keep.any():
@@ -216,8 +231,12 @@ class SRPostProcessor:
             return boxes, scores, elevated
         return boxes, scores
 
-    def _warp_tracks(self, ego_delta):
-        if ego_delta is None or not self._tracks:
+    def _warp_tracks(self, ego_delta, dt=0.1):
+        if not self._tracks:
+            return
+        for tr in self._tracks:
+            tr.box[:2] = tr.box[:2] + np.clip(tr.box[7:9], -35.0, 35.0) * float(dt)
+        if ego_delta is None:
             return
         dx, dy, angle = float(ego_delta[0]), float(ego_delta[1]), float(ego_delta[2])
         if np.hypot(dx, dy) > 8.0 or abs(angle) > 0.35:
@@ -235,8 +254,8 @@ class SRPostProcessor:
                lidar_bev=None, ego_delta=None, dt=0.1):
         """Run single-frame cleanup and temporal association, returning padded OBJECT_SLOTS outputs."""
         slots = max(OBJECT_SLOTS, len(boxes) if boxes is not None else 0)
-        self._warp_tracks(ego_delta)
-        det_boxes, det_scores, det_lidar = self.clean_frame(
+        self._warp_tracks(ego_delta, dt=dt)
+        det_boxes, det_scores, _ = self.clean_frame(
             boxes, scores, drivable_mask, lane_paths, lidar_bev,
             road_dilation_m=self.road_dilation_m, iou_thresh=self.iou_thresh,
             return_lidar_mask=True,
@@ -279,7 +298,7 @@ class SRPostProcessor:
                 tr.box[7:10] = det[7:10]
                 tr.box[10] = 1.0
                 tr.score = 0.70 * sc + 0.30 * tr.score
-                if tr.hits >= self.min_confirm_hits or tr.score >= 0.60 or bool(det_lidar[c]):
+                if tr.hits >= self.min_confirm_hits or tr.score >= 0.78:
                     tr.confirmed = True
 
         survivors = []
@@ -297,7 +316,7 @@ class SRPostProcessor:
                 continue
             det = det_boxes[d_idx].copy()
             sc = float(det_scores[d_idx])
-            confirmed = (self.min_confirm_hits <= 1) or (sc >= 0.60) or bool(det_lidar[d_idx])
+            confirmed = (self.min_confirm_hits <= 1) or (sc >= 0.78)
             survivors.append(_Track(
                 track_id=self._next_id, box=det, score=sc, hits=1, missed=0,
                 confirmed=confirmed, prev_vx=float(det[7]),
@@ -305,7 +324,15 @@ class SRPostProcessor:
             self._next_id += 1
 
         self._tracks = survivors
-        active = sorted([t for t in self._tracks if t.confirmed], key=lambda t: -t.score)[:slots]
+        confirmed_tracks = [t for t in self._tracks if t.confirmed]
+        if confirmed_tracks:
+            t_boxes = np.stack([t.box for t in confirmed_tracks], axis=0)
+            eff_scores = np.array(
+                [t.score + (1.0 if t.missed == 0 else 0.0) for t in confirmed_tracks], dtype=np.float32
+            )
+            keep_idx = _nms_indices(t_boxes, eff_scores, iou_thresh=self.iou_thresh)
+            confirmed_tracks = [confirmed_tracks[int(i)] for i in keep_idx]
+        active = sorted(confirmed_tracks, key=lambda t: -t.score)[:slots]
 
         out_boxes = np.zeros((slots, 11), dtype=np.float32)
         out_scores = np.zeros((slots,), dtype=np.float32)

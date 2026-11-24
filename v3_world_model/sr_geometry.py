@@ -106,12 +106,8 @@ def clean_drivable_mask(prob):
             vals, counts = np.unique(nz, return_counts=True)
             ego_label = int(vals[counts.argmax()])
     keep = np.zeros(binary.shape, np.float32)
-    for k in range(1, num_fg):
-        area = int(fg_stats[k, cv2.CC_STAT_AREA])
-        x_span = float(fg_stats[k, cv2.CC_STAT_HEIGHT]) * DX
-        y_span = float(fg_stats[k, cv2.CC_STAT_WIDTH]) * DY
-        if k == ego_label or (area >= 260 and (x_span >= 24.0 or y_span >= 24.0)):
-            keep[fg_labels == k] = 1.0
+    chosen = ego_label if ego_label > 0 else int(np.argmax(fg_stats[1:, cv2.CC_STAT_AREA])) + 1
+    keep[fg_labels == chosen] = 1.0
     return keep
 
 
@@ -187,7 +183,7 @@ def centerlines(prob):
     return paths
 
 
-def temporal_probabilities(current, previous, delta=None):
+def temporal_probabilities(current, previous, delta=None, *, current_weight=0.65):
     if previous is None:
         return current
     if delta is not None:
@@ -199,7 +195,8 @@ def temporal_probabilities(current, previous, delta=None):
         warped = cv2.remap(previous.transpose(1,2,0), uv, None, cv2.INTER_LINEAR,
                            borderMode=cv2.BORDER_CONSTANT,borderValue=(-1,)*4).transpose(2,0,1)
         previous = np.where(warped >= 0,warped,current)
-    return .65*current + .35*previous
+    w = np.float32(current_weight)
+    return w * current + (np.float32(1.0) - w) * previous
 
 
 def _pack_paths(paths):
