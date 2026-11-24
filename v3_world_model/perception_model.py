@@ -335,7 +335,6 @@ class BEVWAMXPerception(nn.Module):
         self.register_buffer("local_offsets", torch.from_numpy(offsets), persistent=False)
         self.register_buffer("xy_norm_scale", torch.tensor([80., 30.], dtype=torch.float32), persistent=False)
         self.register_buffer("obj_xy_step", torch.tensor([6., 4.], dtype=torch.float32), persistent=False)
-        self.register_buffer("map_xy_step", torch.tensor([4., 2.5], dtype=torch.float32), persistent=False)
         self.register_buffer("box_min", torch.tensor(MIN_BOX, dtype=torch.float32), persistent=False)
         self.register_buffer("box_span", torch.tensor(MAX_BOX - MIN_BOX, dtype=torch.float32), persistent=False)
         self.register_buffer("center_scale", torch.tensor([60., 30., 4.]), persistent=False)
@@ -553,15 +552,16 @@ class BEVWAMXPerception(nn.Module):
                     ))
 
             q_map = self.map_queries.to(z_t.dtype).expand(b, -1, -1)
-            pts_raw = self.map_init_pts(q_map).float().reshape(b, MAP_SLOTS, MAP_POINTS, 2)
-            pts_m = torch.stack((pts_raw[..., 0].tanh() * 60.0 + 20.0, pts_raw[..., 1].tanh() * 30.0), dim=-1)
+            pts_logit = self.map_init_pts(q_map).float().reshape(b, MAP_SLOTS, MAP_POINTS, 2)
+            xy_scale, xy_offset = self.center_scale[:2], self.center_offset[:2]
+            pts_m = pts_logit.tanh() * xy_scale + xy_offset
             aux_map = []
             for m_layer, pt_head, cls_head, obj_head in zip(
                 self.map_layers, self.map_pt_heads, self.map_cls_heads, self.map_obj_heads
             ):
                 q_map = m_layer(q_map, context, bev_fine, pts_m, self.xy_norm_scale)
-                delta_pts = pt_head(q_map).float().reshape(b, MAP_SLOTS, MAP_POINTS, 2).tanh() * self.map_xy_step
-                pts_m = pts_m.detach() + delta_pts
+                pts_logit = pts_logit + pt_head(q_map).float().reshape_as(pts_logit)
+                pts_m = pts_logit.tanh() * xy_scale + xy_offset
                 aux_map.append(dict(
                     map_polylines=pts_m,
                     map_cls_logits=cls_head(q_map).float(),

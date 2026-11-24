@@ -104,6 +104,24 @@ class Stage31cPerceptionTests(unittest.TestCase):
             self.assertEqual(p_dec["map_polylines"].shape, (2, MAP_SLOTS, MAP_POINTS, 2))
             self.assertTrue(torch.isfinite(p_dec["lane_logits"]).all())
 
+    def test_final_map_coordinates_backpropagate_through_all_refinements(self):
+        model = BEVWAMXPerception(lidar_dropout=0., arch="stage31c", pretrained=False).eval()
+        # Constant residuals isolate the coordinate path from gradients through query features.
+        with torch.no_grad():
+            model.map_init_pts[-1].weight.zero_()
+            model.map_init_pts[-1].bias.zero_()
+            for head in model.map_pt_heads:
+                head[-1].weight.zero_()
+                head[-1].bias.fill_(0.5)
+        points = model.decode_perception(torch.zeros(1, 128, 256))["map_polylines"]
+        expected = torch.tensor([60., 30.]) * torch.tensor(1.5).tanh() + torch.tensor([20., 0.])
+        torch.testing.assert_close(points, expected.expand_as(points))
+        points.abs().mean().backward()
+        for head in (model.map_init_pts, *model.map_pt_heads):
+            grad = head[-1].bias.grad
+            self.assertIsNotNone(grad)
+            self.assertTrue(torch.isfinite(grad).all() and (grad != 0).all())
+
     def test_maptr_loss_is_direction_permutation_invariant(self):
         torch.manual_seed(7)
         xs = torch.linspace(-10.0, 50.0, MAP_POINTS)
