@@ -12,6 +12,7 @@ import numpy as np
 import pytorch_lightning as pl
 from scipy.optimize import linear_sum_assignment
 import torch
+from torch.nn import functional as F
 from filelock import FileLock, Timeout
 from pytorch_lightning.callbacks import ModelCheckpoint
 from torch.utils.data import DataLoader, WeightedRandomSampler
@@ -63,6 +64,30 @@ class Stage31(pl.LightningModule):
 
     def on_validation_epoch_start(self):
         self._val_kpi = dict(tp=0, pred=0, gt=0, map_l1_sum=0.0, map_cnt=0, dash_inter=0, dash_union=0)
+        self._val_z_kpi = dict(tp=0, pred=0, gt=0, driv_inter=0, driv_union=0)
+
+    def _track_z_val(self):
+        return bool(self.arch == "stage31c" and (
+            float(self.config.get("z_distill_weight", 0.0)) > 0.0
+            or bool(self.config.get("z_all_frames", False))
+        ))
+
+    def _update_val_z_kpi(self, p_z, tgt_t):
+        scores = p_z["obj_logits"].detach().float().sigmoid().cpu().numpy()
+        p_xy = p_z["boxes"].detach().float()[..., :2].cpu().numpy()
+        gt_b = tgt_t["boxes"].detach().cpu().numpy()
+        for b in range(scores.shape[0]):
+            sel = p_xy[b, scores[b] > 0.5]
+            gt_valid = gt_b[b, gt_b[b, :, -1] > 0.5, :2]
+            self._val_z_kpi["pred"] += len(sel)
+            self._val_z_kpi["gt"] += len(gt_valid)
+            self._val_z_kpi["tp"] += _hungarian_tp(sel, gt_valid, radius=3.0)
+        pred_d = p_z["lane_logits"][:, 0].detach().float() > 0.0
+        tgt_lanes = tgt_t.get("lanes_cont", tgt_t["lanes"])
+        gt_d = tgt_lanes[:, 0].bool()
+        roi = self._roi_mask[None]
+        self._val_z_kpi["driv_inter"] += int((pred_d & gt_d & roi).sum().item())
+        self._val_z_kpi["driv_union"] += int(((pred_d | gt_d) & roi).sum().item())
 
     def _update_val_kpi(self, p, tgt_t):
         scores = p["obj_logits"].detach().float().sigmoid().cpu().numpy()
@@ -107,8 +132,15 @@ class Stage31(pl.LightningModule):
         totals = {}
         weights = STAGE31C_LOSS_WEIGHTS if self.arch == "stage31c" else LOSS_WEIGHTS
         loss_fn = stage31c_losses if self.arch == "stage31c" else stage31_losses
+        z_aux_w = float(self.config.get("z_aux_weight", 0.15))
+        z_distill_w = float(self.config.get("z_distill_weight", 0.0))
+        z_all_frames = bool(self.config.get("z_all_frames", False))
+        need_bev_fine = bool(self.arch == "stage31c" and stage == "train" and z_distill_w > 0.0)
+        track_z_val = bool(stage == "val" and self._track_z_val())
+        aux_z = 0.0
+        z_distill = 0.0
         with sdpa_context(self.config["sdpa"]):
-            last_p, last_tgt = None, None
+            last_p, last_tgt, last_dn = None, None, None
             for t in range(CLIP_LEN):
                 tgt_t = {k: v[:, t] for k, v in targets.items()}
                 gt_dn = tgt_t["boxes"] if (self.arch == "stage31c" and stage == "train") else None
@@ -117,25 +149,46 @@ class Stage31(pl.LightningModule):
                     lidar_bev=inputs["lidar_bev"][:, t], prev_latent=previous,
                     ego_delta=inputs["ego_delta"][:, t], cmd=inputs["cmd"][:, t],
                     nav_anchors=inputs["nav_anchors"][:, t], ego_speed=inputs["ego_speed"][:, t],
-                    gt_boxes=gt_dn,
+                    gt_boxes=gt_dn, return_bev_fine=need_bev_fine,
                 )
                 previous = p["z_t"]
                 losses = loss_fn(p, tgt_t)
                 for key, value in losses.items():
                     totals[key] = totals.get(key, 0) + value / CLIP_LEN
-                last_p, last_tgt = p, tgt_t
+                last_p, last_tgt, last_dn = p, tgt_t, gt_dn
+                if self.arch == "stage31c" and stage == "train" and z_all_frames:
+                    # Supervise z_t latent-only decoding on every clip frame for Stage 3.2 rollout fidelity.
+                    p_dec = self.model.decode_perception(
+                        p["z_t"], bev=None, gt_boxes=gt_dn, return_bev_fine=need_bev_fine,
+                    )
+                    p_dec["trajectory"] = p["trajectory"]
+                    z_losses = stage31c_losses(p_dec, tgt_t)
+                    aux_z = aux_z + (z_aux_w / CLIP_LEN) * sum(weights[k] * z_losses[k] for k in weights if k != "trajectory")
+                    if need_bev_fine:
+                        z_distill = z_distill + (z_distill_w / CLIP_LEN) * F.smooth_l1_loss(
+                            p_dec["bev_fine"].float(), p["bev_fine"].detach().float()
+                        )
                 if self.arch == "stage31c" and stage == "val":
                     self._update_val_kpi(p, tgt_t)
+                    if track_z_val:
+                        p_z = self.model.decode_perception(p["z_t"], bev=None)
+                        self._update_val_z_kpi(p_z, tgt_t)
 
-            aux_z = 0.0
-            if self.arch == "stage31c" and stage == "train" and last_p is not None:
+            if self.arch == "stage31c" and stage == "train" and not z_all_frames and last_p is not None:
                 # Keep z_t latent-only decoding aligned for downstream Stage 3.2 world-model rollout.
-                p_dec = self.model.decode_perception(last_p["z_t"], bev=None)
+                p_dec = self.model.decode_perception(
+                    last_p["z_t"], bev=None, gt_boxes=last_dn if z_distill_w > 0.0 else None,
+                    return_bev_fine=need_bev_fine,
+                )
                 p_dec["trajectory"] = last_p["trajectory"]
                 z_losses = stage31c_losses(p_dec, last_tgt)
-                aux_z = 0.15 * sum(weights[k] * z_losses[k] for k in weights if k != "trajectory")
+                aux_z = z_aux_w * sum(weights[k] * z_losses[k] for k in weights if k != "trajectory")
+                if need_bev_fine:
+                    z_distill = z_distill_w * F.smooth_l1_loss(
+                        p_dec["bev_fine"].float(), last_p["bev_fine"].detach().float()
+                    )
 
-        loss = sum(weight * totals[key] for key, weight in weights.items()) + aux_z
+        loss = sum(weight * totals[key] for key, weight in weights.items()) + aux_z + z_distill
         self.log(f"{stage}_loss", loss, prog_bar=True, on_step=False, on_epoch=True,
                  batch_size=inputs["lidar_bev"].shape[0])
         for key, value in totals.items():
@@ -158,9 +211,16 @@ class Stage31(pl.LightningModule):
         f1 = float(2.0 * p * r / max(1e-8, p + r)) if (p + r) > 0 else 0.0
         map_l1 = float(k["map_l1_sum"] / max(1, k["map_cnt"]))
         dash_iou = float(k["dash_inter"] / max(1, k["dash_union"]))
-        self.log_dict(dict(val_det_p3m=p, val_det_r3m=r, val_det_f1=f1,
-                           val_map_l1_m=map_l1, val_lane_dashed_iou=dash_iou),
-                      prog_bar=False, sync_dist=False)
+        metrics = dict(val_det_p3m=p, val_det_r3m=r, val_det_f1=f1,
+                       val_map_l1_m=map_l1, val_lane_dashed_iou=dash_iou)
+        if self._track_z_val() and self._val_z_kpi:
+            zk = self._val_z_kpi
+            zp = float(zk["tp"] / max(1, zk["pred"]))
+            zr = float(zk["tp"] / max(1, zk["gt"]))
+            zf1 = float(2.0 * zp * zr / max(1e-8, zp + zr)) if (zp + zr) > 0 else 0.0
+            zdriv = float(zk["driv_inter"] / max(1, zk["driv_union"]))
+            metrics.update(val_z_det_p3m=zp, val_z_det_r3m=zr, val_z_det_f1=zf1, val_z_drivable_iou=zdriv)
+        self.log_dict(metrics, prog_bar=False, sync_dist=False)
 
     def configure_optimizers(self):
         base_lr = self.config["learning_rate"]
@@ -229,6 +289,10 @@ def callbacks(out, config):
         best_det = ModelCheckpoint(dirpath=out, filename="best_det", monitor="val_det_f1", mode="max",
                                    save_top_k=1, enable_version_counter=False, save_on_train_epoch_end=False)
         cbs.append(best_det)
+        if float(config.get("z_distill_weight", 0.0)) > 0.0 or bool(config.get("z_all_frames", False)):
+            best_z = ModelCheckpoint(dirpath=out, filename="best_z_det", monitor="val_z_det_f1", mode="max",
+                                     save_top_k=1, enable_version_counter=False, save_on_train_epoch_end=False)
+            cbs.append(best_z)
     return cbs, best
 
 
@@ -285,6 +349,16 @@ def config_for(args):
     if arch == "stage31c":
         cfg["balanced_maps"] = bool(getattr(args, "balanced_maps", False))
         cfg["no_pretrained"] = bool(getattr(args, "no_pretrained", False))
+        z_aux_w = float(getattr(args, "z_aux_weight", saved.get("z_aux_weight", 0.15)))
+        z_distill_w = float(getattr(args, "z_distill_weight", saved.get("z_distill_weight", 0.0)))
+        z_all_frames = bool(getattr(args, "z_all_frames", saved.get("z_all_frames", False)))
+        if z_aux_w != 0.15 or z_distill_w > 0.0 or z_all_frames:
+            cfg["z_aux_weight"] = z_aux_w
+            cfg["z_distill_weight"] = z_distill_w
+            cfg["z_all_frames"] = z_all_frames
+        init_from = getattr(args, "init_from", None)
+        if init_from is not None:
+            cfg["init_from"] = str(init_from)
     return cfg
 
 
@@ -298,9 +372,14 @@ def _balanced_sampler(dataset):
 
 
 def train(args):
+    init_from = getattr(args, "init_from", None)
+    if args.resume and init_from is not None:
+        raise ValueError("Cannot combine --resume and --init-from")
     resume = args.out / "latest.ckpt" if args.resume else None
     if args.resume and not resume.is_file():
         raise FileNotFoundError(resume)
+    if init_from is not None and not Path(init_from).is_file():
+        raise FileNotFoundError(init_from)
     cfg = config_for(args)
     if args.accelerator == "gpu":
         if not torch.cuda.is_available():
@@ -314,6 +393,17 @@ def train(args):
     if not args.resume and any((args.out / f).exists() for f in ("latest.ckpt", "best.ckpt", "validation.jsonl")):
         raise ValueError("Use --resume or a fresh run directory")
     module = Stage31(cfg)
+    if init_from is not None:
+        src = VerifiedCheckpointIO().load_checkpoint(Path(init_from), map_location="cpu")
+        src_ts = src.get("task_state", {})
+        if src_ts.get("config_sha256") != CONFIG_SHA256:
+            raise ValueError("init-from checkpoint sensor contract mismatch")
+        if src_ts.get("architecture") != cfg["architecture"]:
+            raise ValueError(f"init-from architecture mismatch: {src_ts.get('architecture')} != {cfg['architecture']}")
+        module.load_state_dict(src["state_dict"], strict=True)
+        cfg["init_from_step"] = int(src.get("global_step", 0))
+        cfg["init_from_sha256"] = sha256(Path(init_from))
+        del src
     cfg["parameter_count"] = sum(p.numel() for p in module.parameters())
     is_31c = cfg["architecture"] == "stage31c"
     train_data = Clips(args.dataset, "train", load_maptr=is_31c, strong_aug=is_31c)
@@ -360,6 +450,14 @@ def main():
     parser.add_argument("--arch", choices=("stage31b", "stage31c"), default="stage31b")
     parser.add_argument("--balanced-maps", action="store_true")
     parser.add_argument("--no-pretrained", action="store_true")
+    parser.add_argument("--init-from", type=Path, default=None,
+                        help="Warm-start model weights from a verified checkpoint into a fresh run/schedule")
+    parser.add_argument("--z-aux-weight", type=float, default=0.15,
+                        help="Weight on latent-only z_t decode supervision (stage31c)")
+    parser.add_argument("--z-distill-weight", type=float, default=0.0,
+                        help="Weight on bev_fine feature distillation from online branch to z_t-only branch (stage31c)")
+    parser.add_argument("--z-all-frames", action="store_true",
+                        help="Supervise z_t-only decoding on every frame in each 4-frame clip (stage31c)")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--batch", type=int, default=8)
     parser.add_argument("--accumulate", type=int, default=2)

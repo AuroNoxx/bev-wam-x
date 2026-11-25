@@ -104,11 +104,16 @@ def _per_sample_decode_metrics(pred_dec, tgt_dec):
 
 
 def _finite_tensor_dict(*dicts):
-    for d in dicts:
-        for val in d.values():
-            if not torch.isfinite(val).all():
-                return False
-    return True
+    def _check(obj):
+        if torch.is_tensor(obj):
+            return bool(torch.isfinite(obj).all())
+        if isinstance(obj, dict):
+            return all(_check(v) for v in obj.values())
+        if isinstance(obj, (list, tuple)):
+            return all(_check(v) for v in obj)
+        return True
+
+    return all(_check(d) for d in dicts)
 
 
 def _tag_validation_windows(val_ds):

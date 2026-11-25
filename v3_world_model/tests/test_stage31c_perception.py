@@ -173,11 +173,17 @@ class Stage31cPerceptionTests(unittest.TestCase):
             pred = model(rgb, lidar_bev=lidar, cmd=cmd, nav_anchors=nav, ego_speed=spd)
             pred["map_obj_logits"].fill_(3.0)
         scene = prediction_scene(pred, speed=15.0, cruise=20.0, clean=True, mode="LIVE")
+        self.assertEqual(scene["road_source"], "dense")
         self.assertIsNotNone(scene["map_polylines_vis"])
         viewer = SRViewer(size=(480, 270), backend="software")
         img = viewer.render(scene)
         self.assertEqual(img.shape, (270, 480, 3))
         self.assertGreater(int(img.std()), 5)
+        scene_maptr = prediction_scene(pred, speed=15.0, cruise=20.0, clean=True, mode="LIVE", road_source="maptr")
+        self.assertEqual(scene_maptr["road_source"], "maptr")
+        img_maptr = viewer.render(scene_maptr)
+        self.assertEqual(img_maptr.shape, (270, 480, 3))
+        self.assertGreater(int(img_maptr.std()), 5)
 
     def test_stage31c_lightning_train_resume_and_overlay_roundtrip(self):
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
@@ -239,7 +245,57 @@ class Stage31cPerceptionTests(unittest.TestCase):
                 train(args)
             res2 = json.loads((run / "training-result.json").read_text(encoding="utf-8"))
             self.assertEqual(res2["actual_updates"], 2)
+
+            run_distill = root / "run31c_zdistill"
+            args_z = argparse.Namespace(
+                dataset=dataset, out=run_distill, arch="stage31c", balanced_maps=True, no_pretrained=True,
+                init_from=run / "latest.ckpt", z_aux_weight=0.6, z_distill_weight=0.5, z_all_frames=True,
+                batch=1, accumulate=1, max_updates=1, checkpoint_every=1, lr=5e-5,
+                lidar_dropout=0.0, seed=317, accelerator="cpu", precision="32-true",
+                sdpa="math", workers=0, resume=False, warmup_updates=1, schedule_updates=2,
+            )
+            with lock():
+                train(args_z)
+            z_rows = [json.loads(line) for line in (run_distill / "validation.jsonl").read_text(encoding="utf-8").splitlines() if line]
+            self.assertTrue(z_rows)
+            for k in ("val_z_det_p3m", "val_z_det_r3m", "val_z_det_f1", "val_z_drivable_iou"):
+                self.assertIn(k, z_rows[-1])
+            self.assertTrue((run_distill / "best_z_det.ckpt").is_file())
             gc.collect()
+
+    def test_nominal_action_hermite_avoids_early_curb_cut_and_slows_in_90deg_turn(self):
+        from v3_world_model.live_carla_demo import _nominal_action
+
+        traj = np.column_stack((np.linspace(0.6, 15.0, 25), np.zeros(25), np.full(25, 6.0))).astype(np.float32)
+        nav_turn = np.array([[9.0, -6.0, 0.0], [9.0, -18.0, 0.0], [9.0, -30.0, 0.0]], dtype=np.float32)
+        steer_turn, _, brake_turn, v_turn = _nominal_action(traj, nav_turn, speed_mps=6.5, zone_limit_mps=7.0, last_steer=0.0)
+        self.assertGreater(steer_turn, 0.0)
+        self.assertLess(steer_turn, 0.30)
+        self.assertLess(v_turn, 5.0)
+        self.assertGreater(brake_turn, 0.0)
+
+        nav_straight = np.array([[12.0, 0.0, 0.0], [24.0, 0.0, 0.0], [36.0, 0.0, 0.0]], dtype=np.float32)
+        steer_st, _, brake_st, v_st = _nominal_action(traj, nav_straight, speed_mps=14.0, zone_limit_mps=15.3, last_steer=0.0)
+        self.assertAlmostEqual(steer_st, 0.0, places=3)
+        self.assertEqual(brake_st, 0.0)
+        self.assertAlmostEqual(v_st, 15.3, places=1)
+
+        # Approaching a 90deg right turn still 12m ahead must NEVER swerve left (zero Runge overshoot).
+        nav_before_turn = np.array([[12.0, 0.0, 0.0], [12.0, -12.0, 0.0], [12.0, -24.0, 0.0]], dtype=np.float32)
+        steer_pre, _, _, v_pre = _nominal_action(traj, nav_before_turn, speed_mps=6.5, zone_limit_mps=7.0, last_steer=0.0)
+        self.assertGreaterEqual(steer_pre, -1e-4)
+        self.assertLess(v_pre, 5.0)
+
+    def test_stage32_supports_stage31c_perception_and_nested_finite_check(self):
+        from v3_world_model.eval_stage32 import _finite_tensor_dict
+        from v3_world_model.train_stage32 import Stage32WorldModel
+
+        cfg = dict(wm_layers=2, wm_heads=4, perception_architecture="stage31c", perception_ckpt=None)
+        mod = Stage32WorldModel(cfg).eval()
+        self.assertEqual(mod.perception.arch, "stage31c")
+        with torch.no_grad():
+            dec = mod.perception.decode_perception(torch.zeros(1, 128, 256), bev=None)
+        self.assertTrue(_finite_tensor_dict(dec))
 
 
 if __name__ == "__main__":

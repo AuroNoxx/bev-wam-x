@@ -42,12 +42,15 @@ def load_perception_checkpoint(ckpt_path, device):
     task_state = dict(ck.get("task_state", {}))
     if task_state.get("config_sha256") != CONFIG_SHA256:
         raise ValueError("Checkpoint config_sha256 does not match geometry.CONFIG_SHA256")
-    arch = task_state.get("architecture", "stage31b")
     state_dict = ck["state_dict"]
     if any(k.startswith("perception.") for k in state_dict):
+        arch = task_state.get("perception_architecture", "stage31b")
         weights = {k.removeprefix("perception."): v for k, v in state_dict.items() if k.startswith("perception.")}
     else:
+        arch = task_state.get("architecture", "stage31b")
         weights = {k.removeprefix("model."): v for k, v in state_dict.items()}
+    if arch not in ("stage31", "stage31b", "stage31c"):
+        arch = "stage31"
     model = BEVWAMXPerception(lidar_dropout=0.0, arch=arch, pretrained=False)
     model.load_state_dict(weights, strict=True)
     model = model.to(device).eval()

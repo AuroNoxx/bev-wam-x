@@ -72,8 +72,10 @@ def prediction_scene(pred, *, speed=0., cruise=0., intent="Follow", alternatives
                      previous_scene=None, ego_motion=None, lidar_bev=None,
                      postprocessor=None, clean=None, steer=0., throttle=0., brake=0.,
                      accel_lon=0., thw=None, infer_ms=None, limit=80.,
-                     nav_hint="", mode="LIVE"):
+                     nav_hint="", mode="LIVE", road_source="dense"):
     """Convert one batched model result into the unbatched renderer contract."""
+    if road_source not in ("dense", "maptr"):
+        raise ValueError(f"Unsupported SR road_source: {road_source!r}")
     def as_numpy(x):
         return x.detach().float().cpu().numpy()[0]
 
@@ -110,7 +112,7 @@ def prediction_scene(pred, *, speed=0., cruise=0., intent="Follow", alternatives
 
     if use_clean:
         clean_road = clean_drivable_mask(probs[0])
-        if map_vis is not None and (map_vis["dashed"] or map_vis["solid"]):
+        if road_source == "maptr" and map_vis is not None and (map_vis["dashed"] or map_vis["solid"]):
             dashed_paths = map_vis["dashed"]
             solid_paths = map_vis["solid"]
         else:
@@ -155,7 +157,7 @@ def prediction_scene(pred, *, speed=0., cruise=0., intent="Follow", alternatives
                 accel_lon=accel_lon, thw=thw, infer_ms=infer_ms, limit=limit,
                 nav_hint=nav_hint, mode=mode, source="model",
                 object_scores=out_scores, fit_geometry=use_clean, _sr_cache=sr_cache,
-                map_polylines_vis=map_vis)
+                road_source=road_source, map_polylines_vis=map_vis)
 
 
 def from_capture(frame):
@@ -632,7 +634,11 @@ def build_scene(scene, show_occupancy=False):
     mesh.opaque.append(_quads_to_tris_batch(ground_q, (.055, .072, .098, 1.), 0.))
     fit = scene.get("fit_geometry", False)
     vis = scene.get("map_polylines_vis")
-    has_map_vis = isinstance(vis, dict) and any(vis.get(k) for k in ("dashed", "solid", "edge"))
+    has_map_vis = (
+        scene.get("road_source", "dense") == "maptr"
+        and isinstance(vis, dict)
+        and any(vis.get(k) for k in ("dashed", "solid", "edge"))
+    )
     if fit:
         cache = scene.get("_sr_cache")
         if cache is not None and cache.get("probs") is scene.get("lane_probs"):

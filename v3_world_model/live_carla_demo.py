@@ -393,45 +393,134 @@ def _recycle_distant_npcs(carla_mod, world, tm, npcs, ego_loc, nav, rng, target_
     npcs[:] = kept
 
 
+def _fillet_nav_curve(nav_anchors):
+    """Build a monotone non-overshooting filleted corner from ego (0, 0) along (1, 0) to nav_anchors[0]."""
+    pt0 = np.asarray(nav_anchors[0, :2], dtype=np.float64)
+    pt1 = np.asarray(nav_anchors[1, :2], dtype=np.float64)
+    pt2 = np.asarray(nav_anchors[2, :2], dtype=np.float64)
+    chord = float(np.linalg.norm(pt0))
+    if chord < 0.5 or pt0[0] <= 0.5:
+        pts = np.vstack(([0.0, 0.0], pt0))
+        arc = np.array([0.0, max(chord, 1e-3)], dtype=np.float64)
+        return pts, arc, 0.0
+
+    t0 = np.array([1.0, 0.0], dtype=np.float64)
+    d1 = pt1 - pt0
+    n1 = float(np.linalg.norm(d1))
+    t1 = d1 / n1 if n1 > 0.5 else pt0 / chord
+    turn_angle = math.acos(float(np.clip(np.dot(t0, t1), -1.0, 1.0)))
+
+    # Recover corner apex along ego heading y=0 by intersecting with exit tangent through pt0.
+    same_side = (pt0[1] * t1[1]) > 0.0
+    if abs(t1[1]) > 0.15 and abs(pt0[1]) > 0.4 and same_side:
+        x_corner = float(pt0[0] - pt0[1] * (t1[0] / t1[1]))
+        x_corner = float(np.clip(x_corner, 0.5, max(0.5, pt0[0])))
+        corner = np.array([x_corner, 0.0], dtype=np.float64)
+        leg1 = x_corner
+        leg2 = float(np.linalg.norm(pt0 - corner))
+        fillet_r = min(3.5, 0.85 * leg1, 0.85 * leg2)
+        if fillet_r > 0.4:
+            p_in = np.array([x_corner - fillet_r, 0.0], dtype=np.float64)
+            dir2 = (pt0 - corner) / max(leg2, 1e-6)
+            p_out = corner + fillet_r * dir2
+            u = np.linspace(0.0, 1.0, 13, dtype=np.float64)[:, None]
+            arc_pts = ((1.0 - u) ** 2) * p_in + 2.0 * (1.0 - u) * u * corner + (u ** 2) * p_out
+            pieces = []
+            if p_in[0] > 0.2:
+                pieces.append(np.array([[0.0, 0.0]], dtype=np.float64))
+            pieces.append(arc_pts)
+            if float(np.linalg.norm(pt0 - p_out)) > 0.2:
+                pieces.append(pt0[None, :])
+            pts = np.vstack(pieces)
+        else:
+            u = np.linspace(0.0, 1.0, 17, dtype=np.float64)[:, None]
+            pts = 2.0 * (1.0 - u) * u * corner + (u ** 2) * pt0
+        fillet_len = max(2.0 * fillet_r, 4.5)
+    else:
+        # Straight approach or gentle lateral recentering: monotone quadratic Bezier with zero overshoot.
+        corner = np.array([0.5 * pt0[0], 0.0], dtype=np.float64)
+        u = np.linspace(0.0, 1.0, 17, dtype=np.float64)[:, None]
+        pts = 2.0 * (1.0 - u) * u * corner + (u ** 2) * pt0
+        fillet_len = max(chord, 6.0)
+
+    seg = np.linalg.norm(np.diff(pts, axis=0), axis=1)
+    arc = np.r_[0.0, np.cumsum(seg)]
+
+    # Estimate true corner curvature from both near (0->12m) and upcoming (12->24m) heading change.
+    turn_near = turn_angle / max(fillet_len, 4.5)
+    d2 = pt2 - pt1
+    n2 = float(np.linalg.norm(d2))
+    if n2 > 0.5:
+        t2 = d2 / n2
+        turn_mid = math.acos(float(np.clip(np.dot(t1, t2), -1.0, 1.0))) / max(min(n1, 8.0), 5.0)
+    else:
+        turn_mid = 0.0
+    kappa = max(turn_near, 0.75 * turn_mid)
+    return pts, arc, kappa
+
+
+def _sample_polyline_at(pts_xy, ahead_m):
+    """Interpolate a polyline starting from ego origin (0, 0) at arc distance ahead_m."""
+    chain = np.vstack(([0.0, 0.0], np.asarray(pts_xy, dtype=np.float64)))
+    arc = np.r_[0.0, np.cumsum(np.linalg.norm(np.diff(chain, axis=0), axis=1))]
+    target_s = min(float(ahead_m), float(arc[-1]))
+    tx = float(np.interp(target_s, arc, chain[:, 0]))
+    ty = float(np.interp(target_s, arc, chain[:, 1]))
+    return tx, ty, float(arc[-1])
+
+
 def _nominal_action(trajectory_np, nav_anchors, speed_mps, zone_limit_mps, last_steer):
-    """Derive nominal pure-pursuit steer and longitudinal throttle/brake purely from model traj + SD nav."""
+    """Derive nominal pure-pursuit steer and longitudinal throttle/brake from model traj + filleted SD nav."""
     traj_xy = trajectory_np[:, :2]
     fwd_ok = len(traj_xy) >= 12 and np.all(np.diff(traj_xy[:8, 0]) > 0.05)
 
     far_lat = float(abs(nav_anchors[0, 1]))
     mid_lat = float(abs(nav_anchors[1, 1]))
     end_lat = float(abs(nav_anchors[2, 1]))
-    use_nav = (not fwd_ok) or (far_lat > 1.8) or (mid_lat > 2.8) or (end_lat > 4.5)
-    if use_nav:
-        pt0 = nav_anchors[0, :2]
-        pt1 = nav_anchors[1, :2]
-        if fwd_ok and np.linalg.norm(traj_xy[-1]) > 4.0:
-            idx = min(14, len(traj_xy) - 1)
-            tx = 0.35 * traj_xy[idx, 0] + 0.65 * pt0[0]
-            ty = 0.35 * traj_xy[idx, 1] + 0.65 * pt0[1]
-        else:
-            tx, ty = float(pt0[0]), float(pt0[1])
-        curve_y = float(max(abs(pt1[1] - 0.5 * pt0[1]), abs(end_lat - 0.5 * abs(pt1[1]))))
+    nav_pts, nav_arc, nav_kappa_geom = _fillet_nav_curve(nav_anchors)
+
+    # Use shorter speed-adaptive lookahead in tight turns so pure pursuit stays inside the lane until apex.
+    sharp_turn = (far_lat > 1.8) or (nav_kappa_geom > 0.06)
+    if sharp_turn:
+        ahead_m = float(np.clip(3.2 + 0.40 * speed_mps, 3.8, 9.5))
     else:
         ahead_m = float(np.clip(4.2 + 0.52 * speed_mps, 5.0, 14.0))
-        arc = np.r_[0.0, np.cumsum(np.linalg.norm(np.diff(np.vstack(([0.0, 0.0], traj_xy)), axis=0), axis=1))]
-        tx = float(np.interp(ahead_m, arc, np.r_[0.0, traj_xy[:, 0]]))
-        ty = float(np.interp(ahead_m, arc, np.r_[0.0, traj_xy[:, 1]]))
+
+    use_nav = (not fwd_ok) or (far_lat > 1.8) or (mid_lat > 3.5) or (end_lat > 7.5)
+    if use_nav:
+        s_nav = min(ahead_m, float(nav_arc[-1]))
+        nx = float(np.interp(s_nav, nav_arc, nav_pts[:, 0]))
+        ny = float(np.interp(s_nav, nav_arc, nav_pts[:, 1]))
+        if fwd_ok and np.linalg.norm(traj_xy[-1]) > 4.0:
+            mx, my, m_len = _sample_polyline_at(traj_xy, ahead_m)
+            if m_len >= 0.65 * ahead_m:
+                # Near active turn: prioritize filleted nav; on straight approach ahead of far turn: favor model traj.
+                nav_w = 0.78 if far_lat > 1.8 else 0.35
+                tx = (1.0 - nav_w) * mx + nav_w * nx
+                ty = (1.0 - nav_w) * my + nav_w * ny
+            else:
+                tx, ty = nx, ny
+        else:
+            tx, ty = nx, ny
+        curve_y = float(max(abs(nav_anchors[1, 1] - 0.5 * nav_anchors[0, 1]),
+                            abs(end_lat - 0.5 * abs(nav_anchors[1, 1]))))
+    else:
+        tx, ty, _ = _sample_polyline_at(traj_xy, ahead_m)
         curve_y = float(np.max(np.abs(traj_xy[:16, 1])))
 
     wheelbase, max_steer = 2.85, 0.72
     raw_steer = -math.atan2(2.0 * wheelbase * ty, max(1.0, tx * tx + ty * ty)) / max_steer
-    steer = float(np.clip(last_steer + 0.58 * (raw_steer - last_steer), -0.85, 0.85))
+    steer = float(np.clip(last_steer + 0.62 * (raw_steer - last_steer), -0.85, 0.85))
 
-    nav_kappa = min(0.18, curve_y / 180.0 + abs(steer) * 0.045)
-    v_curve = math.sqrt(2.9 / max(nav_kappa, 1e-3))
+    nav_kappa = min(0.24, max(nav_kappa_geom, curve_y / 180.0 + abs(steer) * 0.045))
+    v_curve = math.sqrt(2.1 / max(nav_kappa, 1e-3))
     v_target = min(zone_limit_mps, v_curve)
 
     err = v_target - speed_mps
     if err >= 0.3:
         throttle, brake = float(np.clip(0.28 + 0.09 * err, 0.0, 0.78)), 0.0
-    elif err <= -1.2:
-        throttle, brake = 0.0, float(np.clip((-err - 1.0) * 0.22, 0.0, 0.75))
+    elif err <= -0.8:
+        throttle, brake = 0.0, float(np.clip((-err - 0.5) * 0.28, 0.0, 0.75))
     else:
         throttle, brake = float(np.clip(0.18 + 0.05 * err, 0.0, 0.42)), 0.0
     return steer, throttle, brake, v_target

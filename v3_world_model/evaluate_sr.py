@@ -43,7 +43,10 @@ def evaluate(dataset, checkpoint, clips=24, backend="aotriton"):
     if state["task_state"]["pack_sha256"] != fingerprint:
         raise ValueError("Checkpoint and validation manifest fingerprints differ")
     step = state["global_step"]
-    model = BEVWAMXPerception(lidar_dropout=0., legacy=state["task_state"].get("architecture") != "stage31b").cuda().eval()
+    arch = state["task_state"].get("architecture", "stage31b")
+    if arch not in ("stage31", "stage31b", "stage31c"):
+        arch = "stage31"
+    model = BEVWAMXPerception(lidar_dropout=0., arch=arch, pretrained=False).cuda().eval()
     model.load_state_dict({k.removeprefix("model."): v for k, v in state["state_dict"].items()})
     del state
     data = Clips(dataset, "val")

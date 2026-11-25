@@ -48,6 +48,21 @@ def measure(call, n):
                 device_median=float(np.median(device)), device_p95=float(np.quantile(device, .95)))
 
 
+def _flatten_tensors(obj, prefix=""):
+    """Flatten nested model outputs (tensors, lists/tuples of dicts) into `{name: tensor}`."""
+    out = {}
+    if torch.is_tensor(obj):
+        out[prefix] = obj
+    elif isinstance(obj, dict):
+        for k, v in obj.items():
+            sub = f"{prefix}.{k}" if prefix else str(k)
+            out.update(_flatten_tensors(v, sub))
+    elif isinstance(obj, (list, tuple)):
+        for i, v in enumerate(obj):
+            out.update(_flatten_tensors(v, f"{prefix}[{i}]"))
+    return out
+
+
 @torch.inference_mode()
 def compare(args):
     if not torch.version.hip or not torch.cuda.is_available():
@@ -62,7 +77,10 @@ def compare(args):
         state = VerifiedCheckpointIO().load_checkpoint(args.checkpoint, map_location="cpu")
         if state["task_state"]["config_sha256"] != CONFIG_SHA256:
             raise ValueError("Checkpoint sensor calibration mismatch")
-    model = BEVWAMXPerception(lidar_dropout=0., legacy=bool(state and state["task_state"].get("architecture") != "stage31b")).eval().cuda()
+    arch = state["task_state"].get("architecture", "stage31b") if state else "stage31b"
+    if arch not in ("stage31", "stage31b", "stage31c"):
+        arch = "stage31"
+    model = BEVWAMXPerception(lidar_dropout=0., arch=arch, pretrained=False).eval().cuda()
     if state:
         model.load_state_dict({k.removeprefix("model."): v for k, v in state["state_dict"].items()})
     rgb, inputs = observations(args.frame)
@@ -81,18 +99,20 @@ def compare(args):
                 step()
         torch.cuda.current_stream().wait_stream(warm_stream)
         torch.cuda.synchronize()
-        expected = {k: v.clone() for k, v in step().items()}
+        expected = {k: v.clone() for k, v in _flatten_tensors(step()).items()}
         card_used.append(capacity - torch.cuda.mem_get_info()[0])
         graph = torch.cuda.CUDAGraph()
         with torch.cuda.graph(graph):
             actual = step()
         graph.replay()
         torch.cuda.synchronize()
-        diff = {k: float((expected[k].float() - v.float()).abs().amax().item()) for k, v in actual.items()}
+        actual_flat = _flatten_tensors(actual)
+        diff = {k: float((expected[k].float() - v.float()).abs().amax().item()) for k, v in actual_flat.items()}
         eager_ms, graph_ms = measure(step, args.iterations), measure(graph.replay, args.iterations)
         card_used.append(capacity - torch.cuda.mem_get_info()[0])
     return dict(device=torch.cuda.get_device_name(), rocm=torch.version.hip, sdpa=args.sdpa, precision="BF16",
-                batch=1, iterations=args.iterations, input="capture" if args.frame else "synthetic",
+                architecture=arch, batch=1, iterations=args.iterations,
+                input="capture" if args.frame else "synthetic",
                 checkpoint=bool(args.checkpoint), eager_ms=eager_ms, hip_graph_ms=graph_ms,
                 max_abs_diff=max(diff.values()), per_output_max_abs_diff=diff, control_period_ms=100,
                 peak_allocated_bytes=torch.cuda.max_memory_allocated(), peak_reserved_bytes=torch.cuda.max_memory_reserved(),

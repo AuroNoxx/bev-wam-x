@@ -75,8 +75,11 @@ def extract_all(args):
         raise ValueError("Checkpoint pack_sha256 does not match dataset manifest")
     ckpt_sha = sha256(args.checkpoint)
     ckpt_step = int(ck.get("global_step", 0))
+    arch = task_state.get("architecture", "stage31b")
+    if arch not in ("stage31", "stage31b", "stage31c"):
+        arch = "stage31"
 
-    model = BEVWAMXPerception(lidar_dropout=0.0).to(device).eval()
+    model = BEVWAMXPerception(lidar_dropout=0.0, arch=arch, pretrained=False).to(device).eval()
     model.load_state_dict({k.removeprefix("model."): v for k, v in ck["state_dict"].items()})
     del ck
 
@@ -177,6 +180,7 @@ def extract_all(args):
     kept_ids = {e["id"] for e in episodes}
     out_manifest = {
         "architecture": "stage32-latents-v1",
+        "perception_architecture": arch,
         "config_sha256": CONFIG_SHA256,
         "pack_sha256": pack_sha,
         "checkpoint": str(args.checkpoint),

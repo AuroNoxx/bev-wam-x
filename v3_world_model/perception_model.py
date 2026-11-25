@@ -364,7 +364,7 @@ class BEVWAMXPerception(nn.Module):
         return self.lift_reduce(planes.flatten(1, 2))
 
     def forward(self, rgb, lidar_bev=None, prev_latent=None, ego_delta=None, cmd=None,
-                nav_anchors=None, ego_speed=None, gt_boxes=None):
+                nav_anchors=None, ego_speed=None, gt_boxes=None, *, return_bev_fine=False):
         if len(rgb) != len(NAMES):
             raise ValueError("Expected six RGB tensors in config camera order")
         b = rgb[0].shape[0]
@@ -402,7 +402,8 @@ class BEVWAMXPerception(nn.Module):
         z_t = self.latent_norm(self.latent_blocks(self.resample(queries, tokens)))
 
         if self.arch == "stage31c":
-            decoded = self.decode_perception(z_t, bev, lidar_fine=lidar_fine, gt_boxes=gt_boxes)
+            decoded = self.decode_perception(z_t, bev, lidar_fine=lidar_fine, gt_boxes=gt_boxes,
+                                             return_bev_fine=return_bev_fine)
         else:
             decoded = self.decode_perception(z_t, None if self.legacy else bev)
         return dict(z_t=z_t, **decoded, trajectory=self.plan_trajectory(z_t, cmd, nav_anchors, ego_speed))
@@ -471,7 +472,7 @@ class BEVWAMXPerception(nn.Module):
         boxes = torch.cat((center, size, heading, head_raw[..., 8:10] * 10.0), dim=-1)
         return boxes, head_raw[..., 10:-1], head_raw[..., -1]
 
-    def decode_perception(self, z_t, bev=None, lidar_fine=None, gt_boxes=None):
+    def decode_perception(self, z_t, bev=None, lidar_fine=None, gt_boxes=None, *, return_bev_fine=False):
         """Decode latent alone for rollout, or fuse the observed BEV for online perception."""
         b = z_t.shape[0]
         context = z_t
@@ -586,6 +587,8 @@ class BEVWAMXPerception(nn.Module):
             )
             if use_dn:
                 out["dn_outputs"] = dict(layers=dn_layers, meta=dn_meta)
+            if return_bev_fine:
+                out["bev_fine"] = bev_fine
             return out
 
         dense = self.dense(spatial)

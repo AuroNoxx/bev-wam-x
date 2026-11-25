@@ -136,12 +136,19 @@ class Stage32WorldModel(pl.LightningModule):
             layers=config["wm_layers"],
             heads=config["wm_heads"],
         )
-        self.perception = BEVWAMXPerception(lidar_dropout=0.0)
-        if perception_state_dict is not None:
-            self.perception.load_state_dict(perception_state_dict)
-        elif config.get("perception_ckpt"):
+        perception_arch = config.get("perception_architecture")
+        loaded_sd = perception_state_dict
+        if loaded_sd is None and config.get("perception_ckpt"):
             ck = VerifiedCheckpointIO().load_checkpoint(Path(config["perception_ckpt"]), map_location="cpu")
-            self.perception.load_state_dict({k.removeprefix("model."): v for k, v in ck["state_dict"].items()})
+            perception_arch = perception_arch or ck.get("task_state", {}).get("architecture", "stage31b")
+            loaded_sd = {k.removeprefix("model."): v for k, v in ck["state_dict"].items()}
+        perception_arch = perception_arch or "stage31b"
+        if perception_arch not in ("stage31", "stage31b", "stage31c"):
+            perception_arch = "stage31"
+        self.config["perception_architecture"] = perception_arch
+        self.perception = BEVWAMXPerception(lidar_dropout=0.0, arch=perception_arch, pretrained=False)
+        if loaded_sd is not None:
+            self.perception.load_state_dict(loaded_sd)
         self.perception.eval()
         for param in self.perception.parameters():
             param.requires_grad_(False)
@@ -314,6 +321,7 @@ def _config_for(args):
         raise ValueError("warmup_updates must satisfy 0 <= warmup < schedule_updates")
     return dict(
         architecture="stage32-wm-v1",
+        perception_architecture=latent_manifest.get("perception_architecture", saved.get("perception_architecture")),
         config_sha256=latent_manifest["config_sha256"],
         pack_sha256=latent_manifest["pack_sha256"],
         latents_manifest_sha256=sha256(latent_manifest_path),
